@@ -9,12 +9,13 @@ build = "build.rs"
 
 [dependencies]
 emojis = "0.6.3"
-slint = "1.6"
+slint = { version = "1.7.2", features = ["raw-window-handle-06"] }
 thiserror = "1.0.63"
+raw-window-handle = "0.6.2"
 
 [dependencies.windows]
 version = "0.58.0"
-features = [ "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse" ]
+features = [ "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_Threading", "Win32_Graphics_Gdi", "Win32_UI_Accessibility", "Win32_System_Com" ]
 
 [build-dependencies]
 slint-build = "1.6"

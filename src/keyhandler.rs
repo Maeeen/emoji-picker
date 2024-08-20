@@ -1,12 +1,11 @@
 use std::sync::atomic::Ordering;
 use std::sync::mpsc;
-use std::sync::{atomic::AtomicBool, mpsc::SyncSender, Mutex};
+use std::sync::{atomic::AtomicBool, mpsc::SyncSender};
 use windows::core::Free;
 use windows::Win32::Foundation::{HMODULE, LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::{VK_LWIN, VK_OEM_PERIOD, VK_RWIN};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, SetWindowsHookExA, HHOOK,
-    KBDLLHOOKSTRUCT, WH_KEYBOARD_LL, WM_KEYDOWN,
+    CallNextHookEx, SetWindowsHookExA, HHOOK, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL, WM_KEYDOWN,
 };
 
 use thiserror::Error;
@@ -20,8 +19,10 @@ pub enum KeyHandlerError {
 }
 
 pub struct KeyHandler {
-    #[cfg(not(target_os = "windows"))] inner: Option<()>,
-    #[cfg(target_os = "windows")] inner: Option<HHOOK>
+    #[cfg(not(target_os = "windows"))]
+    inner: Option<()>,
+    #[cfg(target_os = "windows")]
+    inner: Option<HHOOK>,
 }
 
 // Windows: This is the entry point for the low-level keyboard hook.
@@ -34,14 +35,12 @@ unsafe extern "system" fn keyboard_hook(code: i32, wparam: WPARAM, lparam: LPARA
         WINDOWS_KEY_PRESSED.store(wparam.0 == WM_KEYDOWN as usize, Ordering::Relaxed);
     }
 
-    if WINDOWS_KEY_PRESSED.load(Ordering::Relaxed) && wparam.0 == WM_KEYDOWN as usize {
-        if kbd.vkCode == VK_OEM_PERIOD.0.into() {
-            let tx = unsafe { HOOK_CHANNEL.as_ref() };
-            if let Some(tx) = tx {
-                tx.send(()).unwrap();
-            }
-            return LRESULT(1);
+    if WINDOWS_KEY_PRESSED.load(Ordering::Relaxed) && wparam.0 == WM_KEYDOWN as usize && kbd.vkCode == VK_OEM_PERIOD.0.into() {
+        let tx = unsafe { HOOK_CHANNEL.as_ref() };
+        if let Some(tx) = tx {
+            tx.send(()).unwrap();
         }
+        return LRESULT(1);
     }
 
     CallNextHookEx(HHOOK::default(), code, wparam, lparam)
@@ -64,7 +63,7 @@ impl KeyHandler {
                 Default::default(),
             )
         };
-        
+
         let h = h.map_err(|_| KeyHandlerError::HookError)?;
 
         // Setup MPSC channel between caller and hook.
@@ -79,7 +78,9 @@ impl KeyHandler {
     pub fn unhook(mut self) -> Result<(), KeyHandlerError> {
         // If hook is still active, free it.
         if let Some(mut h) = self.inner {
-            unsafe { h.free(); }
+            unsafe {
+                h.free();
+            }
         }
         // Clear
         self.inner = None;

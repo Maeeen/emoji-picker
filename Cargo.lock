@@ -1142,6 +1142,7 @@ name = "emojipicker"
 version = "0.1.0"
 dependencies = [
  "emojis",
+ "raw-window-handle",
  "slint",
  "slint-build",
  "thiserror",
@@ -3480,6 +3481,7 @@ dependencies = [
  "num-traits",
  "once_cell",
  "pin-weak",
+ "raw-window-handle",
  "slint-macros",
  "vtable",
 ]
