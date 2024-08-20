@@ -1,0 +1,20 @@
+[package]
+name = "emojipicker"
+version = "0.1.0"
+authors = ["Maeeen <marwanazuz@gmail.com>"]
+edition = "2021"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+emojis = "0.6.3"
+slint = "1.6"
+thiserror = "1.0.63"
+
+[dependencies.windows]
+version = "0.58.0"
+features = [ "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse" ]
+
+[build-dependencies]
+slint-build = "1.6"

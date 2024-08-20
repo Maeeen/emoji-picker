@@ -1,0 +1,31 @@
+import { Button, VerticalBox, TextEdit, ListView, LineEdit } from "std-widgets.slint";
+
+struct Emoji {
+    name: string,
+    code: string,
+    image: image
+}
+
+export component AppWindow inherits Window {
+    in property <[Emoji]> emojis;
+    callback filter <=> filter-tb.edited;
+    callback exit-requested <=> exit-btn.clicked;
+    callback request-increase-value();
+    VerticalBox {
+        if emojis.length > 0 : ListView {
+            for emoji in emojis: Button {
+                text: emoji.name;
+                icon: emoji.image;
+            }
+        }
+
+        filter-tb := LineEdit {
+            text: "";
+            placeholder-text: "Filter emojis";
+        }
+
+        exit-btn := Button {
+            text: "Quit";
+        }
+    }
+}
