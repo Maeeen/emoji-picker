@@ -29,7 +29,6 @@ pub struct KeyHandler {
 #[cfg(target_os = "windows")]
 unsafe extern "system" fn keyboard_hook(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     let kbd: KBDLLHOOKSTRUCT = unsafe { *(lparam.0 as *const KBDLLHOOKSTRUCT) };
-    println!("Key pressed: {:?}", kbd);
 
     if kbd.vkCode == VK_LWIN.0.into() || kbd.vkCode == VK_RWIN.0.into() {
         WINDOWS_KEY_PRESSED.store(wparam.0 == WM_KEYDOWN as usize, Ordering::Relaxed);
@@ -53,6 +52,7 @@ static mut HOOK_CHANNEL: Option<SyncSender<()>> = None; // This is only in use b
 
 #[cfg(target_os = "windows")]
 impl KeyHandler {
+    // TODO: There is only a single hook allowed per thread. This should be a singleton.
     pub fn hook() -> Result<(KeyHandler, mpsc::Receiver<()>), KeyHandlerError> {
         // Setup the hook.
         let h = unsafe {

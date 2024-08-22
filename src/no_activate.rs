@@ -9,7 +9,7 @@ use windows::Win32::{
 #[cfg(windows)]
 pub fn setup(s: &slint::Window) -> Option<()> {
     use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-    use windows::Win32::{Foundation::{GetLastError, HWND}, UI::WindowsAndMessaging::{GetWindowLongPtrA, SetWindowLongPtrA, ShowWindow, GWL_EXSTYLE, SW_SHOWNOACTIVATE, WS_EX_NOACTIVATE}};
+    use windows::Win32::{Foundation::{GetLastError, HWND}, UI::WindowsAndMessaging::{GetWindowLongPtrA, SetWindowLongPtrA, ShowWindow, GWL_EXSTYLE, SW_SHOWNOACTIVATE, WS_EX_NOACTIVATE, WS_EX_TOPMOST}};
 
     let b = s.window_handle();
     let hwnd = b.window_handle();
@@ -27,7 +27,6 @@ pub fn setup(s: &slint::Window) -> Option<()> {
                 long |= WS_EX_NOACTIVATE.0 as isize;
                 let r = SetWindowLongPtrA(hwnd, GWL_EXSTYLE, long);
                 if r != 0 {
-                    eprintln!("Successful");
                 } else {
                     eprintln!("Could not set WS_EX_NOACTIVATE.");
                     eprintln!("{:?}", GetLastError());

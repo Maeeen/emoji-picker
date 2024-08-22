@@ -8,6 +8,7 @@ use thiserror::Error;
 mod caret_locator;
 mod no_activate;
 mod keyhandler;
+mod keyredir;
 
 slint::include_modules!();
 
@@ -89,15 +90,14 @@ fn main() {
     // Run the UI.
     ui.show().expect("Could not show app.");
 
-    // Setuping listener of messages from hook.
-    no_activate::setup(ui.window());
+    // no_activate::setup(ui.window());
 
     let (stop_tx, stop_rx) = mpsc::sync_channel::<()>(1);
     let (hook, rx) = hook_result.ok().unzip();
     // Setup thread to listen for hook messages.
     let listener = rx.map(|rx| {
         std::thread::spawn({
-            let ui = ui.as_weak();
+            let ui: slint::Weak<AppWindow> = ui.as_weak();
             move || loop {
                 if rx.try_recv().is_ok() {
                     println!("Received message.");
@@ -105,9 +105,12 @@ fn main() {
                         if let Some(position) = get_caret_pos() {
                             a.window().set_position(position);
                         }
-                        // a.window().show().expect("OK");
+                        no_activate::setup(a.window());
                         a.show().expect("OK2");
                         no_activate::setup(a.window());
+                        keyredir::KeyRedirection::new().set_target(a.window()).inspect_err(|e| {
+                            eprintln!("Could not set target window: {:?}", e);
+                        });
                     });
                 }
                 if stop_rx.try_recv().is_ok() {
