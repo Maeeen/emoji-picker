@@ -19,3 +19,4 @@ features = [ "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", 
 
 [build-dependencies]
 slint-build = "1.6"
+cc = "1.1.13"

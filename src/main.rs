@@ -1,14 +1,20 @@
+#![allow(warnings)]
+
 use caret_locator::get_caret_pos;
-use keyhandler::KeyHandler;
+use key_shortcut::KeyHandler;
 use slint::{ModelRc, VecModel};
 use slint_generatedAppWindow::Emoji as EmojiModel;
+use windows::{core::{w, PCSTR}};
 use std::{path::Path, sync::mpsc};
 use thiserror::Error;
 
 mod caret_locator;
 mod no_activate;
-mod keyhandler;
-mod keyredir;
+mod key_shortcut;
+mod to_hwnd;
+mod key_redir;
+
+use to_hwnd::ToHWND;
 
 slint::include_modules!();
 
@@ -36,6 +42,16 @@ enum EmojiError {
     LoadEmojiImageError(#[from] slint::LoadImageError),
 }
 
+fn do_something_fun(s: &slint::Window) {
+    let hwnd = s.to_hwnd().unwrap();
+    unsafe { key_redir::install_hook(hwnd.0 as usize); }
+    // let x = LoadLibraryW(w!("emoji-key-hooker.dll")).unwrap();
+    // println!("Loaded library: {:?}", x);
+    // find location of function in library
+    // let f = std::mem::transmute::<_, unsafe extern "system" fn(isize) -> isize>(GetProcAddress(x, PCSTR("install_hook".as_ptr() as *const u8)).unwrap());
+    // f(5 as isize);
+}
+
 impl<'a> TryInto<EmojiModel> for &EmojiWrapper<'a> {
     type Error = EmojiError;
 
@@ -55,6 +71,7 @@ impl<'a> TryInto<EmojiModel> for &EmojiWrapper<'a> {
 }
 
 fn main() {
+    println!("{}", key_redir::test());
     let ui = AppWindow::new().expect("Could not create window.");
 
     let mut emojis_vec: Vec<EmojiWrapper> = Vec::with_capacity(1024);
@@ -90,7 +107,14 @@ fn main() {
     // Run the UI.
     ui.show().expect("Could not show app.");
 
+
+    unsafe { do_something_fun(ui.window()); }
     // no_activate::setup(ui.window());
+    /* match ui.window().to_hwnd() {
+        Some(hwnd) => { hooker::setup(hwnd).inspect_err(|f| eprintln!("Could not setup hook. {f:?}")); },
+        None => eprintln!("Unsupported platform.")
+    }; */
+    
 
     let (stop_tx, stop_rx) = mpsc::sync_channel::<()>(1);
     let (hook, rx) = hook_result.ok().unzip();
@@ -107,10 +131,14 @@ fn main() {
                         }
                         no_activate::setup(a.window());
                         a.show().expect("OK2");
-                        no_activate::setup(a.window());
-                        keyredir::KeyRedirection::new().set_target(a.window()).inspect_err(|e| {
-                            eprintln!("Could not set target window: {:?}", e);
-                        });
+                        match a.window().to_hwnd() {
+                            Some(hwnd) => {
+                                no_activate::setup(a.window());
+                                do_something_fun(a.window());
+                                // { hooker::setup(hwnd).inspect_err(|f| eprintln!("Could not setup hook. {f:?}")); }
+                            }
+                            None => eprintln!("Unsupported platform."),
+                        }
                     });
                 }
                 if stop_rx.try_recv().is_ok() {
