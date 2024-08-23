@@ -1,0 +1,3 @@
+[submodule "emojis/twemoji"]
+	path = emojis/twemoji
+	url = git@github.com:jdecked/twemoji.git

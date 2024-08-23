@@ -1,0 +1,35 @@
+import { Button, VerticalBox, TextEdit, ListView, LineEdit, AboutSlint } from "std-widgets.slint";
+
+struct EmojiModel {
+    name: string,
+    code: string,
+    image: image
+}
+
+export component EmojiPickerWindow inherits Window {
+    always-on-top: true;
+    width: 400px;
+    height: 600px;
+    title: "Emojis";
+
+
+    in property <[EmojiModel]> emojis;
+    callback filter <=> filter-tb.edited;
+    VerticalBox {
+        if emojis.length > 0 : ListView {
+            for emoji in emojis: Button {
+                text: emoji.name;
+                icon: emoji.image;
+            }
+        }
+        if emojis.length == 0 : Text {
+            text: "No emojis found";
+        }
+        
+        filter-tb := LineEdit {
+            text: "";
+            placeholder-text: "Filter emojis";
+            height: 30px;
+        }
+    }
+}

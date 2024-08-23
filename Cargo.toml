@@ -1,0 +1,20 @@
+[package]
+name = "emoji-picker"
+version = "0.1.0"
+edition = "2021"
+authors = ["Maeeen <marwanazuz@gmail.com>"]
+build = "build.rs"
+
+[dependencies]
+emojis = "0.6.3"
+slint = "1.7.2"
+thiserror = "1.0.63"
+
+[build-dependencies]
+slint-build = "1.6"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58.0", features = [
+    "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_Threading", "Win32_Graphics_Gdi", "Win32_UI_Accessibility", "Win32_System_Com"
+]}
+raw-window-handle = "0.6.2"
