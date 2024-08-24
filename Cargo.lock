@@ -1147,12 +1147,21 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 name = "emoji-picker"
 version = "0.1.0"
 dependencies = [
+ "emoji-picker-hooker",
  "emojis",
  "raw-window-handle",
  "slint",
  "slint-build",
  "thiserror",
  "windows 0.58.0",
+]
+
+[[package]]
+name = "emoji-picker-hooker"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

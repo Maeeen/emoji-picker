@@ -1,0 +1,4 @@
+# Yeah it's annoying, or else the DLL does not build.
+# TODO: add a flag to disable that or add it properly
+[build]
+rustflags=["-C", "panic=abort"]

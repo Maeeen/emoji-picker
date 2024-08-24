@@ -14,6 +14,10 @@ mod no_activate;
 #[cfg(target_os="windows")]
 mod key_shortcut;
 
+#[cfg(feature="key-redir")]
+#[cfg(target_os="windows")]
+mod key_redir;
+
 mod utils;
 
 pub struct Handlers<'a> {
@@ -54,6 +58,13 @@ pub fn get_handlers<'a>() -> Handlers<'a> {
         } else {
             handlers.openers.push(Box::new(key_shortcut.unwrap()));
         }
+    };
+
+    #[cfg(feature="key-redir")]
+    #[cfg(target_os="windows")]
+    {
+        handlers.on_open_handlers.push(key_redir::get_open_handler());
+        handlers.on_close_handlers.push(key_redir::get_close_handler());
     };
 
     handlers

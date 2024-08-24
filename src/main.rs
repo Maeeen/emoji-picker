@@ -6,9 +6,12 @@ mod emoji;
 mod handler;
 mod handlers;
 mod poller;
+
 slint::include_modules!();
 
+
 fn main() {
+
     use handler::*;
 
     let app = EmojiPickerWindow::new().expect("Failed to create window.");
@@ -22,7 +25,7 @@ fn main() {
     } = handlers::get_handlers();
 
     // Open the window on start
-    if true {
+    if false {
         // A slint's weak reference is not Sync, and making a Mutex
         // for ONLY that is not really interesting. 
         openers.push(Box::new(OnceNotifier::new(())))
