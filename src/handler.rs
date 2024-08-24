@@ -24,14 +24,24 @@ impl<'a, Args> Handler<'a, Args> {
 /// A notifier. Technically, it is the same as a handler but in the reverse way.
 /// In principle, it is useless. But, it can be used to make the code more readable.
 /// (ie, the personal preference of callback-hell vs event-driven programming)
-pub trait Notifier<Args> {
+pub trait Notifier<Args>: Send + Sync {
     fn has_notified(&self) -> Option<Args>;
 }
 
-/// A notifier can be a simple `mpsc::Receiver`.
-impl<Args> Notifier<Args> for mpsc::Receiver<Args> {
+/// A notifier can be a simple `mpsc::Receiver`. However, it requires a Mutex
+/// to be `Sync` (which is required by the `Notifier` trait.)
+pub struct MpscNotifier<Args>(Mutex<mpsc::Receiver<Args>>);
+
+impl<Args> MpscNotifier<Args> {
+    pub fn new(rx: mpsc::Receiver<Args>) -> Self {
+        Self(Mutex::new(rx))
+    }
+}
+
+impl<Args> Notifier<Args> for MpscNotifier<Args>
+where Args: Send {
     fn has_notified(&self) -> Option<Args> {
-        self.try_recv().ok()
+        self.0.lock().unwrap().try_recv().ok()
     }
 }
 
@@ -51,7 +61,8 @@ where Args: Default {
     }
 }
 
-impl<Args> Notifier<Args> for OnceNotifier<Args> {
+impl<Args> Notifier<Args> for OnceNotifier<Args>
+where Args: Send {
     fn has_notified(&self) -> Option<Args> {
         self.0.lock().unwrap().take()
     }

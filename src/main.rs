@@ -1,18 +1,25 @@
 use std::{ collections::BTreeMap, sync::{ Arc, RwLock } };
+use handlers::Handlers;
 use slint::{ ModelRc, SharedString, VecModel };
 
 mod emoji;
+mod handler;
 mod handlers;
 mod poller;
 slint::include_modules!();
 
 fn main() {
-    use handlers::*;
+    use handler::*;
 
     let app = EmojiPickerWindow::new().expect("Failed to create window.");
-    let on_close_handlers: Vec<Handler<EmojiPickerWindow>> = vec![(Handler::new(|app: &EmojiPickerWindow| { println!("Closed"); }))];
-    let on_open_handlers: Vec<Handler<EmojiPickerWindow>> = vec![(Handler::new(|app: &EmojiPickerWindow| { println!("Opened"); }))];
-    let mut openers: Vec<Box<dyn Notifier<()> + Send + Sync>> = vec![];
+
+    let Handlers {
+        mut openers,
+        closers,
+        on_close_handlers,
+        before_open_handlers,
+        on_open_handlers
+    } = handlers::get_handlers();
 
     // Open the window on start
     if true {
@@ -21,6 +28,7 @@ fn main() {
         openers.push(Box::new(OnceNotifier::new(())))
     }
 
+    let before_open_handlers = Arc::new(before_open_handlers);
     let on_close_handlers = Arc::new(on_close_handlers);
     let on_open_handlers = Arc::new(on_open_handlers);
     let openers = Arc::new(openers);
@@ -30,6 +38,7 @@ fn main() {
     // Setup close handlers
     app.window().on_close_requested({
         let app = app.as_weak();
+        let on_close_handlers = on_close_handlers.clone();
         move || {
             let app = app.upgrade().unwrap();
             for handler in on_close_handlers.iter() {
@@ -39,20 +48,38 @@ fn main() {
         }
     });
 
+    // Caller to open a window and call the open handlers
     let open_window = {
         let app = app.as_weak();
         move || {
-            let arc = on_open_handlers.clone();
+            let on_open_handlers = on_open_handlers.clone();
+            let before_open_handlers = before_open_handlers.clone();
             app.upgrade_in_event_loop(move |app| {
-                for handler in arc.iter() {
+                for handler in before_open_handlers.iter() {
                     handler.call(&app);
                 }
                 app.window().show().expect("Failed to show window.");
+                for handler in on_open_handlers.iter() {
+                    handler.call(&app);
+                }
             }).unwrap();
         }
     };
 
-    let open_window_shared = RwLock::new(Box::new(open_window));
+    let close_window = {
+        let app = app.as_weak();
+        move || {
+            let arc = on_close_handlers.clone();
+            app.upgrade_in_event_loop(move |app| {
+                for handler in arc.iter() {
+                    handler.call(&app);
+                }
+                app.window().hide().expect("Failed to hide window.");
+            }).unwrap();
+        }
+    };
+
+    let open_window_shared = RwLock::new(open_window);
 
     // Setup window openers
     let poller_for_open = poller::Poller::new(move || {
@@ -63,10 +90,22 @@ fn main() {
             }
         }
     });
+
+    let close_window_shared = RwLock::new(close_window);
+
+    let poller_for_close = poller::Poller::new(move || {
+        let close_window = close_window_shared.read().unwrap();
+        for handler in closers.iter() {
+            if let Some(_) = handler.has_notified() {
+                close_window();
+            }
+        }
+    });
     
     slint::run_event_loop_until_quit().expect("Failed to run event loop.");
 
     poller_for_open.join();
+    poller_for_close.join();
 }
 
 /// This function initializes the emoji buttons in the app.
