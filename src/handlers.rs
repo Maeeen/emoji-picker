@@ -1,4 +1,4 @@
-use std::{rc::Rc, sync::{mpsc, Mutex}};
+use std::sync::{mpsc, Mutex};
 
 /// This represents a very basic handler that can be used to handle events.
 /// It is very important that the handler does not lock anything.
@@ -6,7 +6,6 @@ use std::{rc::Rc, sync::{mpsc, Mutex}};
 /// can be `Sync`. So, it is really important that a handler does not
 /// try to execute any other handler (which is a necessary but not sufficient
 /// condition) to avoid dead-locks.
-// #[derive(Clone)]
 pub struct Handler<'a, Args>(pub Mutex<Box<dyn Fn(&Args) + Send + 'a>>);
 
 impl<'a, Args> Handler<'a, Args> {
@@ -33,5 +32,27 @@ pub trait Notifier<Args> {
 impl<Args> Notifier<Args> for mpsc::Receiver<Args> {
     fn has_notified(&self) -> Option<Args> {
         self.try_recv().ok()
+    }
+}
+
+/// A notifier that notifies only once.
+pub struct OnceNotifier<Args>(Mutex<Option<Args>>);
+
+impl<Args> OnceNotifier<Args> {
+    pub fn new(t: Args) -> Self {
+        Self(Mutex::new(Some(t)))
+    }
+}
+
+impl<Args> Default for OnceNotifier<Args>
+where Args: Default {
+    fn default() -> Self {
+        Self(Mutex::new(Some(Default::default())))
+    }
+}
+
+impl<Args> Notifier<Args> for OnceNotifier<Args> {
+    fn has_notified(&self) -> Option<Args> {
+        self.0.lock().unwrap().take()
     }
 }

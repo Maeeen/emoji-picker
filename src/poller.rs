@@ -22,6 +22,9 @@ impl Poller {
 
     pub fn join(self) {
         self.semaphore.store(true, Ordering::Release);
-        self.handle.join();
+        match self.handle.join() {
+            Err(e) => std::panic::resume_unwind(e),
+            _ => ()
+        }
     }
 }
