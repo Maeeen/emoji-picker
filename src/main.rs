@@ -6,15 +6,19 @@ mod handlers;
 mod poller;
 slint::include_modules!();
 
+fn open_window(app: &EmojiPickerWindow) {
+
+}
+
 fn main() {
     use handlers::*;
 
     let (tx, rx) = std::sync::mpsc::sync_channel::<()>(10);
     
     let app = EmojiPickerWindow::new().expect("Failed to create window.");
-    let mut on_close_handler = vec![(OnCloseHandler::new(on_close_request))];
-    let mut on_open_handler = vec![(OnOpenHandler::new(|app: EmojiPickerWindow| { println!("Opened"); }))];
-    let mut openers = vec![BasicOpener::new(rx)];
+    let mut on_close_handlers: Vec<Handler<EmojiPickerWindow>> = vec![(Handler::new(|app: &EmojiPickerWindow| { println!("Closed"); }))];
+    let mut on_open_handlers: Vec<Handler<EmojiPickerWindow>> = vec![(Handler::new(|app: &EmojiPickerWindow| { println!("Opened"); }))];
+    let mut openers: Vec<Box<dyn Notifier<()> + Send + Sync>> = vec![];
 
     init_emojis(&app);
     
@@ -22,41 +26,42 @@ fn main() {
     app.window().on_close_requested({
         let app = app.as_weak();
         move || {
-            /*
-            let app = app.clone();
-            on_close_handler.iter_mut().for_each({
-                let app2 = app.clone().upgrade().unwrap();
-                |f| f.call(&app2)
-            }); */
             let app = app.upgrade().unwrap();
-            for handler in on_close_handler.iter_mut() {
+            for handler in on_close_handlers.iter_mut() {
                 handler.call(&app);
             }
             slint::CloseRequestResponse::HideWindow
         }
     });
 
-    let stop_threads_flag = Arc::new(AtomicBool::new(false));
+    let open_window = {
+        let app = app.as_weak();
+        move || {
+            let app = app.upgrade_in_event_loop(move |app| {
+                for handler in on_open_handlers {
+                    handler.call(&app);
+                }
+                app.window().show();
+            });
+        }
+    };
+
     // Setup openers
-    let opener_listener = std::thread::spawn({
-        let stop = stop_threads_flag.clone();
-        move || loop {
-            if stop.load(Ordering::SeqCst) { break; };
-            for i in openers.iter() {
-                if let Some(_) = i.has_requested_open() {
-                    println!("Open request.");
+    let open_poller = poller::Poller::new({
+        let app = app.as_weak();
+        move || {
+            for handler in openers.iter_mut() {
+                if let Some(_) = handler.has_notified() {
+                    open_window()
+                    // slint::invoke_from_event_loop(open_window);
                 }
             }
         }
     });
 
     
-
+    open_window();
     slint::run_event_loop_until_quit();
-}
-
-fn on_close_request(app: &EmojiPickerWindow)  {
-    
 }
 
 /// This function initializes the emoji buttons in the app.

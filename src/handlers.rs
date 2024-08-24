@@ -1,64 +1,37 @@
-use std::{cell::RefCell, env::Args, sync::mpsc::{self, Receiver, SyncSender}, thread::JoinHandle};
+use std::{rc::Rc, sync::{mpsc, Mutex}};
 
-pub struct OnCloseHandler<'a, Args>(RefCell<Box<dyn FnMut(Args) + 'a>>);
+/// This represents a very basic handler that can be used to handle events.
+/// It is very important that the handler does not lock anything.
+/// To get more into details: the handler has a Mutex so that the handler
+/// can be `Sync`. So, it is really important that a handler does not
+/// try to execute any other handler (which is a necessary but not sufficient
+/// condition) to avoid dead-locks.
+// #[derive(Clone)]
+pub struct Handler<'a, Args>(pub Mutex<Box<dyn Fn(&Args) + Send + 'a>>);
 
-impl<'a, Args> OnCloseHandler<'a, Args> {
+impl<'a, Args> Handler<'a, Args> {
+    /// Creates a new handler with the given closure.
     pub fn new<F>(f: F) -> Self
-    where F: FnMut(Args) + 'a  {
-        Self(RefCell::new(Box::new(f)))
+    where F: Fn(&Args) + Send + 'a  {
+        Self(Mutex::new(Box::new(f)))
     }
 
-    pub fn call(&self, a: Args) {
-        self.0.borrow_mut().as_mut()(a);
-    }
-}
-
-pub struct OnOpenHandler<'a, Args>(RefCell<Box<dyn FnMut(Args) + 'a>>);
-
-impl<'a, Args> OnOpenHandler<'a, Args> {
-    pub fn new<F>(f: F) -> Self
-    where F: FnMut(Args) + 'a {
-        Self(RefCell::new(Box::new(f)))
-    }
-
-    pub fn call(&self, a: Args) {
-        self.0.borrow_mut().as_mut()(a);
+    /// Calls the handler with the given arguments.
+    pub fn call<'b>(&self, a: &'b Args) {
+        self.0.lock().unwrap()(a);
     }
 }
 
-pub trait Opener<Args> {
-    fn has_requested_open(&self) -> Option<Args>;
+/// A notifier. Technically, it is the same as a handler but in the reverse way.
+/// In principle, it is useless. But, it can be used to make the code more readable.
+/// (ie, the personal preference of callback-hell vs event-driven programming)
+pub trait Notifier<Args> {
+    fn has_notified(&self) -> Option<Args>;
 }
 
-// Basic opener
-pub struct BasicOpener<Args = ()>(mpsc::Receiver<Args>);
-
-impl<Args> BasicOpener<Args> {
-    pub fn new(receiver: mpsc::Receiver<Args>) -> Self {
-        Self(receiver)
-    }
-}
-
-impl<Args> Opener<Args> for BasicOpener<Args> {
-    fn has_requested_open(&self) -> Option<Args> {
-        self.0.try_recv().ok()
-    }
-}
-
-pub struct BasicCloser<Args = ()>(mpsc::Receiver<Args>);
-
-pub trait Closer<Args = ()> {
-    fn try_recv(&self) -> Option<Args>;
-}
-
-impl BasicCloser<Args> {
-    pub fn new(receiver: mpsc::Receiver<Args>) -> Self {
-        Self(receiver)
-    }
-}
-
-impl Closer<Args> for BasicCloser<Args> {
-    fn try_recv(&self) -> Option<Args> {
-        self.0.try_recv().ok()
+/// A notifier can be a simple `mpsc::Receiver`.
+impl<Args> Notifier<Args> for mpsc::Receiver<Args> {
+    fn has_notified(&self) -> Option<Args> {
+        self.try_recv().ok()
     }
 }

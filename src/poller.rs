@@ -1,6 +1,7 @@
+use core::time;
 use std::{sync::{atomic::{AtomicBool, Ordering}, Arc}, thread::JoinHandle};
 
-struct Poller {
+pub struct Poller {
     handle: JoinHandle<()>,
     semaphore: Arc<AtomicBool>
 }
@@ -13,7 +14,7 @@ impl Poller {
             handle: std::thread::spawn(move || loop {
                 if arc_cloned.load(Ordering::Acquire) { break }
                 f();
-                std::thread::sleep(std::time::Duration::from_millis(100));
+                std::thread::sleep(time::Duration::from_millis(100));
             }),
             semaphore: arc
         }
