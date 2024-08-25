@@ -2,8 +2,10 @@
 name = "emoji-picker"
 version = "0.1.0"
 edition = "2021"
+description = "Replaces the default Windows "
 authors = ["Maeeen <marwanazuz@gmail.com>"]
 build = "build.rs"
+repository = "https://github.com/Maeeen/emoji-picker"
 
 [dependencies]
 emojis = "0.6.3"

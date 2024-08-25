@@ -27,6 +27,14 @@ This executable should behave in the same manner as the Windows Emoji Picker, wi
 - having the same shortcut (achieved by using a `WH_KEYBOARD_LL` Windows hook)
 - having the same behavior : focus to the main window is not lost when the picker is opened, and the picker closes when the focus is lost.
 
+## Features
+
+All these features are for Windows only. They will have no effect if not running on Windows.
+
+* `caret`: will place the window near the caret (cursor) position.
+* `no-activate`/`key-redir`: will not activate the window when opened, focus will not be lost when the picker is opened.
+* `key-shortcut`: will open the picker with the <kbd>Win</kbd> + <kbd>.</kbd> shortcut.
+
 ## Targets
 
 * The main target is Windows 11, but it should work on older versions of Windows as well. No need for administrator privileges.
