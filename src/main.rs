@@ -12,11 +12,13 @@ slint::include_modules!();
 
 fn main() {
 
+
     use handler::*;
 
     let app = EmojiPickerWindow::new().expect("Failed to create window.");
 
     let Handlers {
+        emoji_selected,
         mut openers,
         closers,
         on_close_handlers,
@@ -37,6 +39,14 @@ fn main() {
     let openers = Arc::new(openers);
 
     init_emojis(&app);
+
+    // Setup emoji selected
+    app.on_emoji_selected(move |emoji| {
+        let code: String = emoji.code.into();
+        for handler in emoji_selected.iter() {
+            handler.call(&code);
+        }
+    });
     
     // Setup close handlers
     app.window().on_close_requested({

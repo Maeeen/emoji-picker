@@ -3,7 +3,7 @@
 
 use libc::printf;
 use core::{ffi::c_void, panic::PanicInfo};
-use windows_sys::Win32::{Foundation::{GetLastError, HINSTANCE}, UI::{Input::KeyboardAndMouse::VK_ESCAPE, WindowsAndMessaging::{CallNextHookEx, PostMessageW, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KF_UP, WH_KEYBOARD, WM_KEYDOWN, WM_KEYUP}}};
+use windows_sys::Win32::{Foundation::{GetLastError, HINSTANCE}, UI::{Input::KeyboardAndMouse::{VK_ESCAPE, VK_PACKET}, WindowsAndMessaging::{CallNextHookEx, PostMessageW, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KF_UP, WH_KEYBOARD, WM_KEYDOWN, WM_KEYUP}}};
 
 mod volatile;
 use volatile::Volatile;
@@ -19,21 +19,24 @@ static mut WINDOW: Volatile<usize> = Volatile::new(0);
 
 // Maybe everything can be "system"
 pub unsafe extern "system" fn keyboard_hook(ncode: i32, wparam: usize, lparam: isize) -> isize {
-    if ncode >= 0 {
-        if wparam == VK_ESCAPE.into() {
+    // VK_PACKET is a VK-code that is used to send Unicode characters. There is no requirement
+    // (yet) to redirect it, so we can ignore it.
+    // We ignore them because the emoji picker will create them, and so, we don't want to
+    // redirect them.
+    if ncode >= 0 && wparam != VK_PACKET.into() {
+        let window = WINDOW.get();
+        if window != 0 {
+            let message = if lparam as u32 & KF_UP_MASK == KF_UP_MASK { WM_KEYUP } else { WM_KEYDOWN };
+            PostMessageW(window as *mut _, message, wparam, lparam);
+            return 1;
+        } else {
+            // If there is no window, no hook should be installed.
             let hook = HOOK.get();
             if !hook.is_null() {
                 uninstall_hook();
                 return 1;
             }
         }
-    
-        let window = WINDOW.get();
-        if window != 0 {
-            let message = if lparam as u32 & KF_UP_MASK == KF_UP_MASK { WM_KEYUP } else { WM_KEYDOWN };
-            PostMessageW(window as *mut _, message, wparam, lparam);
-            return 1;
-        };
     }
     return CallNextHookEx(HOOK.get(), ncode, wparam, lparam);
 }

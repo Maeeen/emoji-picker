@@ -16,12 +16,16 @@ export component EmojiPickerWindow inherits Window {
     in property <[EmojiModel]> emojis;
     callback filter <=> filter-tb.edited;
     callback close-requested;
+    callback emoji-selected(EmojiModel);
+
     FocusScope { 
         key-pressed(e) => {
             if e.text == Key.Escape {
                 close-requested();
-            };
-            accept
+                accept;
+            } else {
+                reject;
+            }
         }
 
         VerticalBox {
@@ -29,6 +33,9 @@ export component EmojiPickerWindow inherits Window {
                 for emoji in emojis: Button {
                     text: emoji.name;
                     icon: emoji.image;
+                    clicked => {
+                        emoji-selected(emoji);
+                    }
                 }
             }
             if emojis.length == 0 : Text {

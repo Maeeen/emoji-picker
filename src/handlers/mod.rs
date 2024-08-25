@@ -19,9 +19,13 @@ mod key_shortcut;
 #[cfg(target_os="windows")]
 mod key_redir;
 
+#[cfg(target_os="windows")]
+mod emoji_selected;
+
 mod utils;
 
 pub struct Handlers<'a> {
+    pub emoji_selected: Vec<Handler<'a, String>>,
     pub openers: Vec<Box<dyn Notifier<()>>>,
     pub closers: Vec<Box<dyn Notifier<()>>>,
     pub on_close_handlers: Vec<Handler<'a, EmojiPickerWindow>>,
@@ -31,6 +35,7 @@ pub struct Handlers<'a> {
 
 pub fn get_handlers<'a>(app: &EmojiPickerWindow) -> Handlers<'a> {
     let mut handlers = Handlers {
+        emoji_selected: vec![],
         openers: vec![],
         closers: vec![],
         on_close_handlers: vec![],
@@ -69,6 +74,11 @@ pub fn get_handlers<'a>(app: &EmojiPickerWindow) -> Handlers<'a> {
     };
 
     handlers.closers.push(close_shortcut::get_close_shortcut_notifier(app));
+
+    #[cfg(target_os="windows")]
+    {
+        handlers.emoji_selected.push(emoji_selected::get_handler());
+    };
 
     handlers
 }
