@@ -1,6 +1,7 @@
 use crate::handler::{Handler, Notifier};
 use crate::EmojiPickerWindow;
 
+mod close_shortcut;
 
 #[cfg(feature="caret")]
 #[cfg(target_os="windows")]
@@ -28,7 +29,7 @@ pub struct Handlers<'a> {
     pub on_open_handlers: Vec<Handler<'a, EmojiPickerWindow>>
 }
 
-pub fn get_handlers<'a>() -> Handlers<'a> {
+pub fn get_handlers<'a>(app: &EmojiPickerWindow) -> Handlers<'a> {
     let mut handlers = Handlers {
         openers: vec![],
         closers: vec![],
@@ -66,6 +67,8 @@ pub fn get_handlers<'a>() -> Handlers<'a> {
         handlers.on_open_handlers.push(key_redir::get_open_handler());
         handlers.on_close_handlers.push(key_redir::get_close_handler());
     };
+
+    handlers.closers.push(close_shortcut::get_close_shortcut_notifier(app));
 
     handlers
 }

@@ -15,21 +15,31 @@ export component EmojiPickerWindow inherits Window {
 
     in property <[EmojiModel]> emojis;
     callback filter <=> filter-tb.edited;
-    VerticalBox {
-        if emojis.length > 0 : ListView {
-            for emoji in emojis: Button {
-                text: emoji.name;
-                icon: emoji.image;
+    callback close-requested;
+    FocusScope { 
+        key-pressed(e) => {
+            if e.text == Key.Escape {
+                close-requested();
+            };
+            accept
+        }
+
+        VerticalBox {
+            if emojis.length > 0 : ListView {
+                for emoji in emojis: Button {
+                    text: emoji.name;
+                    icon: emoji.image;
+                }
             }
-        }
-        if emojis.length == 0 : Text {
-            text: "No emojis found";
-        }
-        
-        filter-tb := LineEdit {
-            text: "";
-            placeholder-text: "Filter emojis";
-            height: 30px;
+            if emojis.length == 0 : Text {
+                text: "No emojis found";
+            }
+            
+            filter-tb := LineEdit {
+                text: "";
+                placeholder-text: "Filter emojis";
+                height: 30px;
+            }
         }
     }
 }

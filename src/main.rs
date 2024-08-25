@@ -22,10 +22,10 @@ fn main() {
         on_close_handlers,
         before_open_handlers,
         on_open_handlers
-    } = handlers::get_handlers();
+    } = handlers::get_handlers(&app);
 
     // Open the window on start
-    if false {
+    if true {
         // A slint's weak reference is not Sync, and making a Mutex
         // for ONLY that is not really interesting. 
         openers.push(Box::new(OnceNotifier::new(())))

@@ -10,25 +10,23 @@ mod emoji_picker_hooker {
     // Linking DLLs on Windows with Rust is a damn shame.
     #[link(name = "emoji_picker_hooker.dll")]
     extern "C" {
-        // #[link_name = "install_hook"]
-        pub fn install_hook(window: usize);
-        // #[link_name = "test"]
-        pub fn test(a: usize);
-        // #[link_name = "uninstall_hook"]
+        pub fn install_hook(window: usize) -> u32;
         pub fn uninstall_hook();
     }
 }
 
 pub fn get_open_handler<'a>() -> Handler<'a, EmojiPickerWindow> {
-    unsafe { emoji_picker_hooker::test(5); }
     Handler::new(|app: &EmojiPickerWindow| {
-        unsafe { install_hook(app.window().to_hwnd().unwrap().0 as usize) }
+        let r = unsafe { install_hook(app.window().to_hwnd().unwrap().0 as usize) };
+        if r != 0 {
+            eprintln!("[key_redir] Failed to set hook.");
+        }
     })
 }
 
 
 pub fn get_close_handler<'a>() -> Handler<'a, EmojiPickerWindow> {
-    Handler::new(|app: &EmojiPickerWindow| {
+    Handler::new(|_: &EmojiPickerWindow| {
         unsafe { uninstall_hook() }
     })
 }
