@@ -1,4 +1,4 @@
-# Emoji Picker
+# <image src="./assets/ico-48.png" style="vertical-align: middle"> Emoji Picker 
 
 This is a simple emoji picker that replaces the emoji picker in Windows ≥10.
 

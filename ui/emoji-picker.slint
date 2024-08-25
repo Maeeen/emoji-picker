@@ -11,7 +11,7 @@ export component EmojiPickerWindow inherits Window {
     width: 400px;
     height: 600px;
     title: "Emojis";
-
+    icon: @image-url("../assets/ico-16.png");
 
     in property <[EmojiModel]> emojis;
     callback filter <=> filter-tb.edited;

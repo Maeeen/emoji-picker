@@ -16,6 +16,9 @@ thiserror = "1.0.63"
 [build-dependencies]
 slint-build = "1.6"
 
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1.17"
+
 [features]
 default = ["caret", "no-activate", "key-shortcut", "key-redir"]
 caret = []
