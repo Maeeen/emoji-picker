@@ -70,8 +70,9 @@ fn get_caret_location() -> Option<Position> {
 }
 
 pub fn get_handler<'a>() -> Handler<'a, EmojiPickerWindow> {
-    Handler::new(|app: &EmojiPickerWindow| match get_caret_location() {
-        Some(p) => app.window().set_position(p),
-        None => (),
+    Handler::new(|app: &EmojiPickerWindow| {
+        if let Some(p) = get_caret_location() {
+            app.window().set_position(p)
+        }
     })
 }

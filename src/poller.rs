@@ -30,9 +30,8 @@ impl Poller {
 
     pub fn join(self) {
         self.semaphore.store(true, Ordering::Release);
-        match self.handle.join() {
-            Err(e) => std::panic::resume_unwind(e),
-            _ => (),
+        if let Err(e) = self.handle.join() {
+            std::panic::resume_unwind(e)
         }
     }
 }

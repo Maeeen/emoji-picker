@@ -3,7 +3,7 @@
 
 use libc::printf;
 use core::{ffi::c_void, panic::PanicInfo};
-use windows_sys::Win32::{Foundation::{GetLastError, HINSTANCE}, UI::{Input::KeyboardAndMouse::{VK_ESCAPE, VK_PACKET}, WindowsAndMessaging::{CallNextHookEx, PostMessageW, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KF_UP, WH_KEYBOARD, WM_KEYDOWN, WM_KEYUP}}};
+use windows_sys::Win32::{Foundation::{GetLastError, HINSTANCE}, UI::{Input::KeyboardAndMouse::VK_PACKET, WindowsAndMessaging::{CallNextHookEx, PostMessageW, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KF_UP, WH_KEYBOARD, WM_KEYDOWN, WM_KEYUP}}};
 
 mod volatile;
 use volatile::Volatile;

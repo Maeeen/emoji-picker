@@ -1,12 +1,15 @@
 use std::sync::{mpsc, Mutex};
 
+/// Represents a handler function.
+type HandlerFn<'a, Args> = dyn Fn(&Args) + Send + 'a;
+
 /// This represents a very basic handler that can be used to handle events.
 /// It is very important that the handler does not lock anything.
 /// To get more into details: the handler has a Mutex so that the handler
 /// can be `Sync`. So, it is really important that a handler does not
 /// try to execute any other handler (which is a necessary but not sufficient
 /// condition) to avoid dead-locks.
-pub struct Handler<'a, Args>(pub Mutex<Box<dyn Fn(&Args) + Send + 'a>>);
+pub struct Handler<'a, Args>(pub Mutex<Box<HandlerFn<'a, Args>>>);
 
 impl<'a, Args> Handler<'a, Args> {
     /// Creates a new handler with the given closure.
@@ -18,7 +21,7 @@ impl<'a, Args> Handler<'a, Args> {
     }
 
     /// Calls the handler with the given arguments.
-    pub fn call<'b>(&self, a: &'b Args) {
+    pub fn call(&self, a: &Args) {
         self.0.lock().unwrap()(a);
     }
 }

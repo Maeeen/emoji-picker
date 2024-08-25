@@ -30,7 +30,7 @@ There is many caveats when programming this kind of Windows application in Rust:
 ## TO-DO
 
 * [ ] Better readme and showcase
-* [ ] The basic fact that clicking on an emoji types the emoji
+* [ ] `caret_locator` places the window in the screen's bbox
 * [ ] Doing the TODOs in code
 * [ ] Lost focus closes the picker
 * [ ] Customize emoji image source

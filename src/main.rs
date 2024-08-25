@@ -100,7 +100,7 @@ fn main() {
     let poller_for_open = poller::Poller::new(move || {
         let open_window = open_window_shared.read().unwrap();
         for handler in openers.iter() {
-            if let Some(_) = handler.has_notified() {
+            if handler.has_notified().is_some() {
                 open_window();
             }
         }
@@ -111,7 +111,7 @@ fn main() {
     let poller_for_close = poller::Poller::new(move || {
         let close_window = close_window_shared.read().unwrap();
         for handler in closers.iter() {
-            if let Some(_) = handler.has_notified() {
+            if handler.has_notified().is_some() {
                 close_window();
             }
         }

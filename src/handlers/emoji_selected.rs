@@ -25,7 +25,7 @@ pub fn get_handler<'a>() -> Handler<'a, String> {
                 },
             },
         });
-        let input_struct_kf = input_struct_kd.clone().into_iter().map(|mut k| {
+        let input_struct_kf = input_struct_kd.clone().map(|mut k| {
             unsafe {
                 k.Anonymous.ki.dwFlags |= KEYEVENTF_KEYUP;
             }

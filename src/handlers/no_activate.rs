@@ -13,7 +13,7 @@ use crate::EmojiPickerWindow;
 fn setup(s: &slint::Window) -> Option<()> {
     let hwnd = s.to_hwnd()?;
     unsafe {
-        let mut long: isize = GetWindowLongPtrA(hwnd, GWL_EXSTYLE) as isize;
+        let mut long = GetWindowLongPtrA(hwnd, GWL_EXSTYLE);
         long |= WS_EX_NOACTIVATE.0 as isize;
         let r = SetWindowLongPtrA(hwnd, GWL_EXSTYLE, long);
         if r != 0 {

@@ -60,7 +60,7 @@ impl KeyShortcut {
                 Default::default(),
             )
         }
-        .map_err(|e| KeyShortcutError::HookError(e))?;
+        .map_err(KeyShortcutError::HookError)?;
         Ok(Self(Mutex::new(rx)))
     }
 }
