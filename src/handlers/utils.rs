@@ -1,5 +1,5 @@
-use windows::Win32::Foundation::HWND;
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+use windows::Win32::Foundation::HWND;
 
 pub trait ToHWND {
     fn to_hwnd(&self) -> Option<HWND>;

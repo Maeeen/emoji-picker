@@ -1,22 +1,30 @@
 use core::time;
-use std::{sync::{atomic::{AtomicBool, Ordering}, Arc}, thread::JoinHandle};
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread::JoinHandle,
+};
 
 pub struct Poller {
     handle: JoinHandle<()>,
-    semaphore: Arc<AtomicBool>
+    semaphore: Arc<AtomicBool>,
 }
 
 impl Poller {
     pub fn new(mut f: impl FnMut() + Send + 'static) -> Self {
         let arc = Arc::new(AtomicBool::new(false));
         let arc_cloned = arc.clone();
-        Poller { 
+        Poller {
             handle: std::thread::spawn(move || loop {
-                if arc_cloned.load(Ordering::Acquire) { break }
+                if arc_cloned.load(Ordering::Acquire) {
+                    break;
+                }
                 f();
                 std::thread::sleep(time::Duration::from_millis(100));
             }),
-            semaphore: arc
+            semaphore: arc,
         }
     }
 
@@ -24,7 +32,7 @@ impl Poller {
         self.semaphore.store(true, Ordering::Release);
         match self.handle.join() {
             Err(e) => std::panic::resume_unwind(e),
-            _ => ()
+            _ => (),
         }
     }
 }

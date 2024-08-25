@@ -1,9 +1,14 @@
-use windows::Win32::{Foundation::GetLastError, UI::WindowsAndMessaging::{GetWindowLongPtrA, SetWindowLongPtrA, GWL_EXSTYLE, WS_EX_NOACTIVATE}};
 use slint::ComponentHandle;
+use windows::Win32::{
+    Foundation::GetLastError,
+    UI::WindowsAndMessaging::{
+        GetWindowLongPtrA, SetWindowLongPtrA, GWL_EXSTYLE, WS_EX_NOACTIVATE,
+    },
+};
 
+use super::utils::ToHWND;
 use crate::handler::Handler;
 use crate::EmojiPickerWindow;
-use super::utils::ToHWND;
 
 fn setup(s: &slint::Window) -> Option<()> {
     let hwnd = s.to_hwnd()?;

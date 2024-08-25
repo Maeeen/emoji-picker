@@ -1,10 +1,15 @@
-use std::sync::{mpsc::{Receiver, SyncSender}, Mutex};
+use std::sync::{
+    mpsc::{Receiver, SyncSender},
+    Mutex,
+};
 
 use windows::Win32::{
     Foundation::{HMODULE, LPARAM, LRESULT, WPARAM},
     UI::{
         Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LWIN, VK_OEM_PERIOD, VK_RWIN},
-        WindowsAndMessaging::{CallNextHookEx, SetWindowsHookExA, HHOOK, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL, WM_KEYDOWN},
+        WindowsAndMessaging::{
+            CallNextHookEx, SetWindowsHookExA, HHOOK, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL, WM_KEYDOWN,
+        },
     },
 };
 
@@ -42,7 +47,7 @@ pub enum KeyShortcutError {
 pub struct KeyShortcut(Mutex<Receiver<()>>);
 
 impl KeyShortcut {
-    pub fn create() -> Result<Self, KeyShortcutError>  {
+    pub fn create() -> Result<Self, KeyShortcutError> {
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         unsafe {
             HOOK_CHANNEL = Some(tx);
@@ -54,7 +59,8 @@ impl KeyShortcut {
                 HMODULE::default(),
                 Default::default(),
             )
-        }.map_err(|e| KeyShortcutError::HookError(e))?;
+        }
+        .map_err(|e| KeyShortcutError::HookError(e))?;
         Ok(Self(Mutex::new(rx)))
     }
 }

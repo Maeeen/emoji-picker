@@ -24,9 +24,6 @@ pub fn get_open_handler<'a>() -> Handler<'a, EmojiPickerWindow> {
     })
 }
 
-
 pub fn get_close_handler<'a>() -> Handler<'a, EmojiPickerWindow> {
-    Handler::new(|_: &EmojiPickerWindow| {
-        unsafe { uninstall_hook() }
-    })
+    Handler::new(|_: &EmojiPickerWindow| unsafe { uninstall_hook() })
 }

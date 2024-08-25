@@ -11,7 +11,9 @@ pub struct Handler<'a, Args>(pub Mutex<Box<dyn Fn(&Args) + Send + 'a>>);
 impl<'a, Args> Handler<'a, Args> {
     /// Creates a new handler with the given closure.
     pub fn new<F>(f: F) -> Self
-    where F: Fn(&Args) + Send + 'a  {
+    where
+        F: Fn(&Args) + Send + 'a,
+    {
         Self(Mutex::new(Box::new(f)))
     }
 
@@ -39,7 +41,9 @@ impl<Args> MpscNotifier<Args> {
 }
 
 impl<Args> Notifier<Args> for MpscNotifier<Args>
-where Args: Send {
+where
+    Args: Send,
+{
     fn has_notified(&self) -> Option<Args> {
         self.0.lock().unwrap().try_recv().ok()
     }
@@ -55,14 +59,18 @@ impl<Args> OnceNotifier<Args> {
 }
 
 impl<Args> Default for OnceNotifier<Args>
-where Args: Default {
+where
+    Args: Default,
+{
     fn default() -> Self {
         Self(Mutex::new(Some(Default::default())))
     }
 }
 
 impl<Args> Notifier<Args> for OnceNotifier<Args>
-where Args: Send {
+where
+    Args: Send,
+{
     fn has_notified(&self) -> Option<Args> {
         self.0.lock().unwrap().take()
     }

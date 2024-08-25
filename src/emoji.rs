@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-
 pub type EmojiMap = BTreeMap<String, EmojiWrapper>;
 pub struct EmojiWrapper(&'static emojis::Emoji);
 
@@ -9,7 +8,7 @@ pub fn list_emojis() -> EmojiMap {
     let mut emojis = BTreeMap::new();
     for emoji in emojis::iter() {
         emojis.insert(emoji.as_str().into(), EmojiWrapper(emoji));
-    };
+    }
     emojis
 }
 
@@ -41,10 +40,7 @@ impl TwemojiFilename for EmojiWrapper {
         } else {
             chars
         };
-        let codes: Vec<String> = codes
-            .into_iter()
-            .map(|e| format!("{:0>4x}", e))
-            .collect();
+        let codes: Vec<String> = codes.into_iter().map(|e| format!("{:0>4x}", e)).collect();
         codes.join("-")
     }
 

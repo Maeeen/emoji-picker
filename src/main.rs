@@ -1,6 +1,9 @@
-use std::{ collections::BTreeMap, sync::{ Arc, RwLock } };
 use handlers::Handlers;
-use slint::{ ModelRc, SharedString, VecModel };
+use slint::{ModelRc, SharedString, VecModel};
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, RwLock},
+};
 
 mod emoji;
 mod handler;
@@ -9,10 +12,7 @@ mod poller;
 
 slint::include_modules!();
 
-
 fn main() {
-
-
     use handler::*;
 
     let app = EmojiPickerWindow::new().expect("Failed to create window.");
@@ -23,13 +23,13 @@ fn main() {
         closers,
         on_close_handlers,
         before_open_handlers,
-        on_open_handlers
+        on_open_handlers,
     } = handlers::get_handlers(&app);
 
     // Open the window on start
     if true {
         // A slint's weak reference is not Sync, and making a Mutex
-        // for ONLY that is not really interesting. 
+        // for ONLY that is not really interesting.
         openers.push(Box::new(OnceNotifier::new(())))
     }
 
@@ -47,7 +47,7 @@ fn main() {
             handler.call(&code);
         }
     });
-    
+
     // Setup close handlers
     app.window().on_close_requested({
         let app = app.as_weak();
@@ -75,7 +75,8 @@ fn main() {
                 for handler in on_open_handlers.iter() {
                     handler.call(&app);
                 }
-            }).unwrap();
+            })
+            .unwrap();
         }
     };
 
@@ -88,7 +89,8 @@ fn main() {
                     handler.call(&app);
                 }
                 app.window().hide().expect("Failed to hide window.");
-            }).unwrap();
+            })
+            .unwrap();
         }
     };
 
@@ -114,7 +116,7 @@ fn main() {
             }
         }
     });
-    
+
     slint::run_event_loop_until_quit().expect("Failed to run event loop.");
 
     poller_for_open.join();
@@ -127,16 +129,24 @@ fn init_emojis(app: &EmojiPickerWindow) {
     use emoji::*;
 
     let emojis: BTreeMap<_, EmojiModel> = {
-        list_emojis().into_iter().flat_map(|(key, emoji)| {
-            let filename = emoji.get_filename_path();
-            let image = slint::Image::load_from_path(&filename);
+        list_emojis()
+            .into_iter()
+            .flat_map(|(key, emoji)| {
+                let filename = emoji.get_filename_path();
+                let image = slint::Image::load_from_path(&filename);
 
-            image.ok().map(|image| (key, EmojiModel {
-                name: emoji.name().into(),
-                code: emoji.code().into(),
-                image
-            }))
-        }).collect()
+                image.ok().map(|image| {
+                    (
+                        key,
+                        EmojiModel {
+                            name: emoji.name().into(),
+                            code: emoji.code().into(),
+                            image,
+                        },
+                    )
+                })
+            })
+            .collect()
     };
     let weak_app = app.as_weak();
 
@@ -146,13 +156,18 @@ fn init_emojis(app: &EmojiPickerWindow) {
     let filter = move |search: SharedString| {
         let mut emoji_buttons = Vec::new();
         let search = search.to_lowercase();
-        let filtered_emojis = emojis.iter().filter(|(_, emoji)| emoji.name.contains(&search));
+        let filtered_emojis = emojis
+            .iter()
+            .filter(|(_, emoji)| emoji.name.contains(&search));
         for (_, emoji) in filtered_emojis {
             emoji_buttons.push(emoji.clone());
-        };
-        weak_app.upgrade().unwrap().set_emojis(ModelRc::new(VecModel::from(emoji_buttons)));
+        }
+        weak_app
+            .upgrade()
+            .unwrap()
+            .set_emojis(ModelRc::new(VecModel::from(emoji_buttons)));
     };
-    
+
     filter("".into());
     app.on_filter(filter);
 }
