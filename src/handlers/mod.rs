@@ -2,6 +2,7 @@ use crate::handler::{Handler, Notifier};
 use crate::EmojiPickerWindow;
 
 mod close_shortcut;
+mod on_open_slint;
 
 #[cfg(feature = "caret")]
 #[cfg(target_os = "windows")]
@@ -50,6 +51,14 @@ pub fn get_handlers<'a>(app: &EmojiPickerWindow) -> Handlers<'a> {
         before_open_handlers: vec![],
     };
 
+    // Slint dependant
+    handlers
+        .closers
+        .push(close_shortcut::get_close_shortcut_notifier(app));
+    handlers
+        .before_open_handlers
+        .push(on_open_slint::get_handler());
+
     #[cfg(feature = "caret")]
     #[cfg(target_os = "windows")]
     {
@@ -85,10 +94,6 @@ pub fn get_handlers<'a>(app: &EmojiPickerWindow) -> Handlers<'a> {
             .on_close_handlers
             .push(key_redir::get_close_handler());
     };
-
-    handlers
-        .closers
-        .push(close_shortcut::get_close_shortcut_notifier(app));
 
     #[cfg(target_os = "windows")]
     {

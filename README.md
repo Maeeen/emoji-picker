@@ -70,9 +70,8 @@ Multi-platform features:
 * [ ] Should copy to clipboard if no text box is focused
 * [ ] Skin tones
 * [x] A tray-icon (maybe?) Not a good idea to have a process floating around without showing its existence to the user.
-* [ ] On lost focus, close the picker. As of right now, only pressing <kbd>Esc</kbd> closes the picker.
 * [ ] Better readme and showcase
-* [ ] The search text input should be automatically focused on opening
+* [x] The search text input should be automatically focused on opening
 * [x] `caret_locator` places the window in the screen's bbox
 * [ ] Doing the TODOs in code
 * [x] Lost focus closes the picker

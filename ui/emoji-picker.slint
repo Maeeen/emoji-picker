@@ -18,6 +18,10 @@ export component EmojiPickerWindow inherits Window {
     callback close-requested;
     callback emoji-selected(EmojiModel);
 
+    public function on-open() {
+        filter-tb.focus();
+    }
+
     FocusScope { 
         key-pressed(e) => {
             if e.text == Key.Escape {
