@@ -1,3 +1,4 @@
+use crate::poller::Poller;
 use std::sync::{mpsc, Mutex};
 
 /// Represents a handler function.
@@ -76,5 +77,43 @@ where
 {
     fn has_notified(&self) -> Option<Args> {
         self.0.lock().unwrap().take()
+    }
+}
+
+#[allow(dead_code)] // Currently unused, but may come handy.
+pub struct NotifierPoller<Args> {
+    inner_rx: MpscNotifier<Args>,
+    poller: Poller,
+}
+
+#[allow(dead_code)] // Currently unused, but may come handy.
+impl<Args> NotifierPoller<Args>
+where
+    Args: Send + 'static,
+{
+    pub fn new(mut f: impl FnMut() -> Option<Args> + Send + 'static) -> Self {
+        let (tx, rx) = mpsc::sync_channel::<Args>(10);
+        let poller = Poller::new(move || {
+            if let Some(t) = f() {
+                tx.send(t).unwrap();
+            }
+        });
+        Self {
+            inner_rx: MpscNotifier::new(rx),
+            poller,
+        }
+    }
+
+    pub fn join(self) {
+        self.poller.join();
+    }
+}
+
+impl<Args> Notifier<Args> for NotifierPoller<Args>
+where
+    Args: Send,
+{
+    fn has_notified(&self) -> Option<Args> {
+        self.inner_rx.has_notified()
     }
 }

@@ -55,7 +55,7 @@ There is many caveats when programming this kind of Windows application in Rust:
 ## TO-DO
 
 * [ ] Emoji groups
-* [ ] A tray-icon (maybe?) Not a good idea to have a process floating around without showing its existence to the user.
+* [x] A tray-icon (maybe?) Not a good idea to have a process floating around without showing its existence to the user.
 * [ ] On lost focus, close the picker. As of right now, only pressing <kbd>Esc</kbd> closes the picker.
 * [ ] Better readme and showcase
 * [ ] The search text input should be automatically focused on opening

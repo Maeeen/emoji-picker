@@ -8,7 +8,7 @@ use windows::Win32::UI::{
 
 use crate::handler::Handler;
 
-// On a Windows system, the emoji picker will the requested String to the active window.
+// On a Windows system, the emoji picker will send the requested String to the active window.
 pub fn get_handler<'a>() -> Handler<'a, String> {
     Handler::new(|code: &String| {
         let encoded = str::encode_utf16(code);
@@ -32,7 +32,6 @@ pub fn get_handler<'a>() -> Handler<'a, String> {
             k
         });
         let input_struct = input_struct_kd.chain(input_struct_kf).collect::<Vec<_>>();
-        // println!("Sending {:?}", input_struct);
         unsafe {
             SendInput(input_struct.as_slice(), std::mem::size_of::<INPUT>() as i32);
         }

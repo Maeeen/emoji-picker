@@ -16,6 +16,7 @@ impl Poller {
     pub fn new(mut f: impl FnMut() + Send + 'static) -> Self {
         let arc = Arc::new(AtomicBool::new(false));
         let arc_cloned = arc.clone();
+        // This is not nice. Might switch to slint::spawn
         Poller {
             handle: std::thread::spawn(move || loop {
                 if arc_cloned.load(Ordering::Acquire) {

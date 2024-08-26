@@ -22,6 +22,9 @@ mod key_redir;
 #[cfg(target_os = "windows")]
 mod emoji_selected;
 
+#[cfg(feature = "tray-icon")]
+mod tray_icon;
+
 mod utils;
 
 pub struct Handlers<'a> {
@@ -86,6 +89,11 @@ pub fn get_handlers<'a>(app: &EmojiPickerWindow) -> Handlers<'a> {
     #[cfg(target_os = "windows")]
     {
         handlers.emoji_selected.push(emoji_selected::get_handler());
+    };
+
+    #[cfg(feature = "tray-icon")]
+    {
+        handlers.openers.push(tray_icon::initialize());
     };
 
     handlers
