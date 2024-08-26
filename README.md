@@ -14,13 +14,15 @@ This is still a work in progress, but as a beginner Rustacean, a few milestones 
 
 ## Running
 
-* Tested on Windows 11, MSVC toolchain.
+* Tested on Windows 11 23H2, MSVC toolchain.
 
 ```bash
 git clone --recurse-submodules git@github.com:Maeeen/emoji-picker.git
 cd emoji-picker
 cargo run
 ```
+
+* For Windows 7/8 (i.e. demo), [Rust needs to be downgraded to 1.75](https://github.com/rustdesk/rustdesk/discussions/7503).
 
 ## Goal
 
