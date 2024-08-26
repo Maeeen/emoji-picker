@@ -28,8 +28,11 @@ fn main() {
 
     // Open the window on start
     if true {
-        // A slint's weak reference is not Sync, and making a Mutex
-        // for ONLY that is not really interesting.
+        // This is a bit of a hack. We need to open the window on start.
+        // The borrow checker is not happy when we try to open the window using
+        // the RwLock in the poller. With an Arc, since a slint's weak reference
+        // is not Sync, and making a Mutex for ONLY that is not really interesting.
+        // Little hack ftw.
         openers.push(Box::new(OnceNotifier::new(())))
     }
 
@@ -119,8 +122,9 @@ fn main() {
 
     slint::run_event_loop_until_quit().expect("Failed to run event loop.");
 
-    poller_for_open.join();
-    poller_for_close.join();
+    // This is not really necessary.
+    poller_for_open.signal_stop();
+    poller_for_close.signal_stop();
 }
 
 /// This function initializes the emoji buttons in the app.

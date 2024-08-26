@@ -8,7 +8,8 @@ use windows::Win32::{
     UI::{
         Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LWIN, VK_OEM_PERIOD, VK_RWIN},
         WindowsAndMessaging::{
-            CallNextHookEx, SetWindowsHookExA, HHOOK, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL, WM_KEYDOWN,
+            CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT,
+            WH_KEYBOARD_LL, WM_KEYDOWN,
         },
     },
 };
@@ -44,7 +45,7 @@ pub enum KeyShortcutError {
     HookError(#[from] windows::core::Error),
 }
 
-pub struct KeyShortcut(Mutex<Receiver<()>>);
+pub struct KeyShortcut(usize, Mutex<Receiver<()>>);
 
 impl KeyShortcut {
     pub fn create() -> Result<Self, KeyShortcutError> {
@@ -52,7 +53,7 @@ impl KeyShortcut {
         unsafe {
             HOOK_CHANNEL = Some(tx);
         };
-        unsafe {
+        let hook = unsafe {
             SetWindowsHookExA(
                 WH_KEYBOARD_LL,
                 Some(keyboard_hook),
@@ -61,12 +62,22 @@ impl KeyShortcut {
             )
         }
         .map_err(KeyShortcutError::HookError)?;
-        Ok(Self(Mutex::new(rx)))
+        Ok(Self(hook.0 as usize, Mutex::new(rx)))
     }
 }
 
 impl Notifier<()> for KeyShortcut {
     fn has_notified(&self) -> Option<()> {
-        self.0.lock().unwrap().try_recv().ok()
+        self.1.lock().unwrap().try_recv().ok()
+    }
+}
+
+impl Drop for KeyShortcut {
+    fn drop(&mut self) {
+        unsafe {
+            if let Err(e) = UnhookWindowsHookEx(HHOOK(self.0 as *mut _)) {
+                eprintln!("Failed to unhook the keyboard hook. Reason: {:?}", e);
+            }
+        }
     }
 }

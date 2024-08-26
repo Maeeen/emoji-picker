@@ -135,7 +135,7 @@ fn get_caret_position() -> Option<CaretPosition> {
             )
             .ok()?;
 
-        return Some(CaretPosition { x, y, w, h });
+        Some(CaretPosition { x, y, w, h })
     }
 }
 

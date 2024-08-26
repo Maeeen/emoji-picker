@@ -104,8 +104,8 @@ where
         }
     }
 
-    pub fn join(self) {
-        self.poller.join();
+    pub fn signal_stop(self) {
+        self.poller.signal_stop();
     }
 }
 
