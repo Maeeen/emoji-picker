@@ -1,6 +1,6 @@
 # <image src="./assets/ico-48.png" style="vertical-align: middle"> Emoji Picker 
 
-This is a simple emoji picker that replaces the emoji picker in Windows ≥10.
+This is a simple emoji picker that replaces the emoji picker in Windows ≥10, with **all** shortcuts. 
 
 This is still a work in progress, but as a beginner Rustacean, a few milestones (including making a DLL Windows hook in Rust) have been achieved.
 
@@ -24,7 +24,12 @@ cargo run
 
 * For Windows 7/8 (i.e. demo), [Rust needs to be downgraded to 1.75](https://github.com/rustdesk/rustdesk/discussions/7503).
 
-## Goal
+## Features
+
+* Replaces the painfully slow and bloated Windows emoji picker (personal opinion.)
+* You can tweak it to your liking (since this is fully public.)
+
+### Goal
 
 This executable should behave in the same manner as the Windows Emoji Picker, with the main goal of:
 - having the same shortcut (achieved by using a `WH_KEYBOARD_LL` Windows hook)
@@ -32,7 +37,14 @@ This executable should behave in the same manner as the Windows Emoji Picker, wi
 
 On top of that, the picker should be not CPU nor memory intensive. Currently, it uses around ~50MB of RAM and 0% CPU when idle. The `emoji-picker-hooker` is around ~10KB.
 
-## Features
+### Why?
+
+When talking to some friends on Instagram web, I type relatively fast and… clicking on the emoji button… looking for the correct one… clicking on it… became annoying.
+
+Every [emoji picker](https://google.com/search?q=emoji+picker+windows+github) copies the emoji to the clipboard (which is a rather okay solution), but I really liked the built-in picker on Windows.
+So I made this! It does not _copy_ the emoji but directly types it. Focus on the main window is not lost. I wanted to learn Rust, and play a bit with the Win32 API.
+
+## Crate features
 
 All these features are for Windows only. They will have no effect if not running on Windows.
 
@@ -50,11 +62,6 @@ Multi-platform features:
 * On Linux/macOS, there is no strict requirement for this but the missing implementations are:
   * [ ] The keyboard shortcut to open the picker. (<kbd>Win</kbd> + <kbd>.</kbd>) (`src/key_shortcut.rs`)
   * [ ] The “key interceptor” that prevents focus being made to the Emoji Picker window AND intercepts every key made while the picker is open.
-
-## Features
-
-* Replaces the painfully slow and bloated Windows emoji picker (personal opinion.)
-* You can tweak it to your liking (since this is fully public.)
 
 ## TO-DO
 
