@@ -8,12 +8,13 @@ build = "build.rs"
 repository = "https://github.com/Maeeen/emoji-picker"
 
 [features]
-default = ["caret", "no-activate", "key-shortcut", "key-redir", "tray-icon"]
+default = ["caret", "no-activate", "key-shortcut", "key-redir", "tray-icon", "back-click"]
 caret = []
 no-activate = []
 key-shortcut = []
 key-redir = ["dep:emoji-picker-hooker"]
 tray-icon = ["dep:tray-item"]
+back-click = []
 
 [dependencies]
 emojis = "0.6.3"

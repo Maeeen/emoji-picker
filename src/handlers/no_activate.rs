@@ -19,7 +19,10 @@ fn setup(s: &slint::Window) -> Option<()> {
         if r != 0 {
             Some(())
         } else {
-            eprintln!("Could not set WS_EX_NOACTIVATE. Reason: {:?}", GetLastError());
+            eprintln!(
+                "Could not set WS_EX_NOACTIVATE. Reason: {:?}",
+                GetLastError()
+            );
             None
         }
     }

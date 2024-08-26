@@ -1153,14 +1153,15 @@ dependencies = [
  "slint",
  "slint-build",
  "thiserror",
+ "tray-item",
  "windows 0.58.0",
+ "winresource",
 ]
 
 [[package]]
 name = "emoji-picker-hooker"
 version = "0.1.0"
 dependencies = [
- "libc",
  "windows-sys 0.59.0",
 ]
 
@@ -2854,6 +2855,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "padlock"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c10569378a1dacd9f30dbe7ae49e054d2c45dc2f8ee49899903e09c3924e8b6f"
+
+[[package]]
 name = "parking"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3467,7 +3474,7 @@ dependencies = [
  "regex",
  "serde_json",
  "tar",
- "toml",
+ "toml 0.8.19",
 ]
 
 [[package]]
@@ -3855,6 +3862,18 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "toml"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd79e69d3b627db300ff956027cc6c3798cef26d22526befdfcd12feeb6d2257"
+dependencies = [
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit 0.19.15",
+]
+
+[[package]]
+name = "toml"
 version = "0.8.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1ed1f98e3fdc28d6d910e6737ae6ab1a93bf1985935a1193e68f93eeb68d24e"
@@ -3881,6 +3900,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
  "indexmap",
+ "serde",
+ "serde_spanned",
  "toml_datetime",
  "winnow 0.5.40",
 ]
@@ -3938,6 +3959,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c06d3da6113f116aaee68e4d601191614c9053067f9ab7f6edbcb161237daa54"
 dependencies = [
  "once_cell",
+]
+
+[[package]]
+name = "tray-item"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59d4bd406170690dc30eabb3badc67a085beaf9b2c3b1923afcc9c26a2191353"
+dependencies = [
+ "cocoa",
+ "core-graphics",
+ "libc",
+ "objc",
+ "objc-foundation",
+ "objc_id",
+ "padlock",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4835,6 +4872,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68a9bda4691f099d435ad181000724da8e5899daa10713c2d432552b9ccd3a6f"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "winresource"
+version = "0.1.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77e2aaaf8cfa92078c0c0375423d631f82f2f57979c2884fdd5f604a11e45329"
+dependencies = [
+ "toml 0.7.8",
+ "version_check",
 ]
 
 [[package]]

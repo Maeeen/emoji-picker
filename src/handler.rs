@@ -80,6 +80,20 @@ where
     }
 }
 
+pub struct NeverNotifier;
+
+impl Default for NeverNotifier {
+    fn default() -> Self {
+        Self
+    }
+}
+
+impl<Args> Notifier<Args> for NeverNotifier {
+    fn has_notified(&self) -> Option<Args> {
+        None
+    }
+}
+
 #[allow(dead_code)] // Currently unused, but may come handy.
 pub struct NotifierPoller<Args> {
     inner_rx: MpscNotifier<Args>,

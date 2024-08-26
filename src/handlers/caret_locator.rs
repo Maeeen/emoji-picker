@@ -90,8 +90,12 @@ fn get_window_position(window: &slint::Window, cp: CaretPosition) -> Position {
             final_position.y = cp.y + cp.h;
         };
         // Put it definitely in the work area
-        final_position.x = final_position.x.clamp(work_area.left, work_area.right - window_size.0);
-        final_position.y = final_position.y.clamp(work_area.top, work_area.bottom - window_size.1);
+        final_position.x = final_position
+            .x
+            .clamp(work_area.left, work_area.right - window_size.0);
+        final_position.y = final_position
+            .y
+            .clamp(work_area.top, work_area.bottom - window_size.1);
         Some(final_position)
     }
 

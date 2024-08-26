@@ -2,7 +2,7 @@
 
 This is a simple emoji picker that replaces the emoji picker in Windows ≥10, with **all** shortcuts. 
 
-This is still a work in progress, but as a beginner Rustacean, a few milestones (including making a DLL Windows hook in Rust) have been achieved.
+:warning: This is a work in progress and mainly a learning project.
 
 ## Demo
 
@@ -51,6 +51,7 @@ All these features are for Windows only. They will have no effect if not running
 * `caret`: will place the window near the caret (cursor) position.
 * `no-activate`/`key-redir`: will not activate the window when opened, focus will not be lost when the picker is opened.
 * `key-shortcut`: will open the picker with the <kbd>Win</kbd> + <kbd>.</kbd> shortcut.
+* `back-click`: will close the picker when the user clicks outside the picker.
 
 Multi-platform features:
 
@@ -66,6 +67,7 @@ Multi-platform features:
 ## TO-DO
 
 * [ ] Emoji groups
+* [ ] Should copy to clipboard if no text box is focused
 * [ ] Skin tones
 * [x] A tray-icon (maybe?) Not a good idea to have a process floating around without showing its existence to the user.
 * [ ] On lost focus, close the picker. As of right now, only pressing <kbd>Esc</kbd> closes the picker.
@@ -73,7 +75,7 @@ Multi-platform features:
 * [ ] The search text input should be automatically focused on opening
 * [x] `caret_locator` places the window in the screen's bbox
 * [ ] Doing the TODOs in code
-* [ ] Lost focus closes the picker
+* [x] Lost focus closes the picker
 * [ ] Customize emoji image source
   + Currently, the app uses [`jdecked/twemoji`](https://github.com/jdecked/twemoji) for the emojis along with the [`emojis` crate](https://crates.io/crates/emojis). In the future,
     it would be a good idea to not make it a submodule, as it requires manually updating the submodule (maybe?)
