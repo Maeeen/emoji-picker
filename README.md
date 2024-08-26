@@ -9,6 +9,7 @@ This is still a work in progress, but as a beginner Rustacean, a few milestones 
 <center>
 
 ![Demo](./demo.gif)
+
 </center>
 
 ## Running
@@ -27,6 +28,8 @@ This executable should behave in the same manner as the Windows Emoji Picker, wi
 - having the same shortcut (achieved by using a `WH_KEYBOARD_LL` Windows hook)
 - having the same behavior : focus to the main window is not lost when the picker is opened, and the picker closes when the focus is lost.
 
+On top of that, the picker should be not CPU nor memory intensive. Currently, it uses around ~50MB of RAM and 0% CPU when idle. The `emoji-picker-hooker` is around ~10KB.
+
 ## Features
 
 All these features are for Windows only. They will have no effect if not running on Windows.
@@ -34,6 +37,10 @@ All these features are for Windows only. They will have no effect if not running
 * `caret`: will place the window near the caret (cursor) position.
 * `no-activate`/`key-redir`: will not activate the window when opened, focus will not be lost when the picker is opened.
 * `key-shortcut`: will open the picker with the <kbd>Win</kbd> + <kbd>.</kbd> shortcut.
+
+Multi-platform features:
+
+* `tray-icon`: will show a tray icon that can be used to open the picker.
 
 ## Targets
 
@@ -47,14 +54,10 @@ All these features are for Windows only. They will have no effect if not running
 * Replaces the painfully slow and bloated Windows emoji picker (personal opinion.)
 * You can tweak it to your liking (since this is fully public.)
 
-## Caveats
-
-There is many caveats when programming this kind of Windows application in Rust:
-- a shit ton of `unsafe` tags
-
 ## TO-DO
 
 * [ ] Emoji groups
+* [ ] Skin tones
 * [x] A tray-icon (maybe?) Not a good idea to have a process floating around without showing its existence to the user.
 * [ ] On lost focus, close the picker. As of right now, only pressing <kbd>Esc</kbd> closes the picker.
 * [ ] Better readme and showcase
