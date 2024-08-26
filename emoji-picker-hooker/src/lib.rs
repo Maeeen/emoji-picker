@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 
-use libc::printf;
 use core::{ffi::c_void, panic::PanicInfo};
 use windows_sys::Win32::{Foundation::{GetLastError, HINSTANCE}, UI::{Input::KeyboardAndMouse::VK_PACKET, WindowsAndMessaging::{CallNextHookEx, PostMessageW, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KF_UP, WH_KEYBOARD, WM_KEYDOWN, WM_KEYUP}}};
 
@@ -79,6 +78,5 @@ pub unsafe extern "C" fn uninstall_hook() {
 // Not really the best way to handle panics, let's not rely on any crate
 #[panic_handler]
 fn panic(_panic: &PanicInfo<'_>) -> ! {
-    unsafe { printf("Panic occurred\n\0".as_ptr() as *const i8) };
     unreachable!()
 }

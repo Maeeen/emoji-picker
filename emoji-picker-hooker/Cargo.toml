@@ -10,6 +10,5 @@ crate-type = ["cdylib"]
 [dependencies]
 # Todo pass here later and remove useless features
 windows-sys = { version = "0.59.0", features = [
-    "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_Threading", "Win32_Graphics_Gdi", "Win32_UI_Accessibility", "Win32_System_Com", "Win32_System_Diagnostics_Debug"
+    "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse"
 ]}
-libc = { version = "0.2.158", features = [] }

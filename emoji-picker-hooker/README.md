@@ -10,3 +10,6 @@ abort a panic and not unwind the stack. It works *as-of-now* but it should be in
 
 It also makes use of a `.shared` (`rws`) section in the `.dll`. The `build.rs` only prints the MSVC
 linker option.
+
+The name of the crate is to make it obvious for users that will inspect the loaded `.dll`s in their
+processes.
