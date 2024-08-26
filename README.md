@@ -59,7 +59,7 @@ There is many caveats when programming this kind of Windows application in Rust:
 * [ ] On lost focus, close the picker. As of right now, only pressing <kbd>Esc</kbd> closes the picker.
 * [ ] Better readme and showcase
 * [ ] The search text input should be automatically focused on opening
-* [ ] `caret_locator` places the window in the screen's bbox
+* [x] `caret_locator` places the window in the screen's bbox
 * [ ] Doing the TODOs in code
 * [ ] Lost focus closes the picker
 * [ ] Customize emoji image source
