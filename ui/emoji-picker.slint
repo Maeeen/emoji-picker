@@ -1,10 +1,6 @@
-import { Button, VerticalBox, TextEdit, ListView, LineEdit, AboutSlint } from "std-widgets.slint";
-
-struct EmojiModel {
-    name: string,
-    code: string,
-    image: image
-}
+import { EmojiModel, EmojiGroupModel } from "emoji-model.slint";
+import { EmojiGroupList } from "emoji-group.slint";
+import { Button, VerticalBox, TextEdit, ListView, LineEdit, AboutSlint, ScrollView } from "std-widgets.slint";
 
 export component EmojiPickerWindow inherits Window {
     always-on-top: true;
@@ -13,7 +9,8 @@ export component EmojiPickerWindow inherits Window {
     title: "Emojis";
     icon: @image-url("../assets/ico-16.png");
 
-    in property <[EmojiModel]> emojis;
+    in property <[EmojiGroupModel]> emoji_groups;
+
     callback filter <=> filter-tb.edited;
     callback close-requested;
     callback emoji-selected(EmojiModel);
@@ -33,18 +30,23 @@ export component EmojiPickerWindow inherits Window {
         }
 
         VerticalBox {
-            if emojis.length > 0 : ListView {
-                for emoji in emojis: Button {
-                    text: emoji.name;
-                    icon: emoji.image;
-                    clicked => {
-                        emoji-selected(emoji);
-                    }
+            EmojiGroupList {
+                groups: emoji_groups;
+                emoji-selected(e) => {
+                    emoji-selected(e);
                 }
             }
-            if emojis.length == 0 : Text {
-                text: "No emojis found";
-            }
+
+            // if emoji_groups.length > 0 : test := ListView {
+            //     for group in emoji_groups: EmojiGroup {
+            //         title: group.title;
+            //         emojis: group;
+            //         expanded: true;
+            //     }
+            // }
+            // if emoji_groups.length == 0 : Text {
+            //     text: "No emojis found";
+            // }
             
             filter-tb := LineEdit {
                 text: "";

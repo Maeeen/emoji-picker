@@ -66,6 +66,7 @@ Multi-platform features:
 
 ## TO-DO
 
+* [ ] Better name everything (notably, features)
 * [ ] Emoji groups
 * [ ] Should copy to clipboard if no text box is focused
 * [ ] Skin tones

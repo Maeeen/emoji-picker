@@ -1,0 +1,120 @@
+import { Palette, Button, ListView, VerticalBox, ScrollView } from "std-widgets.slint";
+import { EmojiModel, EmojiGroupModel } from "emoji-model.slint";
+
+
+component GroupLine inherits VerticalLayout {
+    alignment: center;
+    in property <color> color;
+
+    Rectangle {
+        height: 1px;
+        background: color;
+    }
+}
+
+component GroupTitle inherits Rectangle {
+    in property <string> title: "Placeholder";
+    callback clicked;
+    width: 100%;
+    height: 20px;
+
+    HorizontalLayout {
+        spacing: 10px;
+        Text {
+            vertical-alignment: center;
+            horizontal-alignment: left;
+            text: title;
+        }
+
+        GroupLine {
+            color: Palette.border;
+        }
+    }
+}
+
+component EmojiButtons inherits Rectangle {
+    in-out property <bool> expanded: false;
+    in-out property <[EmojiModel]> emojis;
+    in-out property <[string]> test;
+    callback emoji-selected(EmojiModel);
+
+    VerticalLayout {
+        for emoji in emojis: Button {
+            text: emoji.name;
+            icon: emoji.image;
+            clicked => {
+                emoji-selected(emoji);
+            }
+        }
+    }
+}
+
+component EmojiGroup {
+    in property <string> title: "Placeholder title";
+    in property <EmojiGroupModel> emojis;
+
+    callback emoji-selected(EmojiModel);
+
+    VerticalLayout {
+        GroupTitle {
+            height: 20px;
+            title: title;
+        }
+        EmojiButtons {
+            emojis: emojis.emojis;
+            emoji-selected(e) => {
+                emoji-selected(e);
+            }
+        }
+    }
+}
+
+component EmojiTabs inherits HorizontalLayout {
+    in property <[EmojiGroupModel]> groups;
+    callback scroll-requested(int);
+
+
+    for group[idx] in groups: Button {
+        text: group.title;
+        clicked => {
+            scroll-requested(idx);
+        }
+    }
+}
+
+global EmojiGroupListScroll {
+    callback set-y-pos(int, length);
+    in-out property <[length]> groups_y_pos;
+}
+
+export component EmojiGroupList {
+    in property <[EmojiGroupModel]> groups;
+    // This is really more a workaround than a solution
+    in-out property <[length]> groups_y_pos;
+    callback emoji-selected(EmojiModel);
+
+    VerticalLayout {
+        EmojiTabs {
+            groups: groups;
+            scroll-requested(idx) => {
+                // s.viewport-y = -groups_y_pos[idx];
+            }
+        }
+
+        s := ScrollView {
+            VerticalLayout {
+                for group[index] in groups: EmojiGroup {
+                    title: group.title;
+                    emojis: group;
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                    init() => {
+                        EmojiGroupListScroll.set-y-pos(index, self.y);
+                        // groups_y_pos_[index] = self.y;
+                    }
+                }
+            }
+        }
+    }
+}
