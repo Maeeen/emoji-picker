@@ -12,12 +12,7 @@ use windows::{
             NULL_BRUSH, PAINTSTRUCT,
         },
         UI::WindowsAndMessaging::{
-            CloseWindow, CreateWindowExW, DefWindowProcW, GetSystemMetrics, GetWindowLongPtrW,
-            PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, SetWindowLongPtrW,
-            SetWindowPos, ShowWindow, CS_HREDRAW, CS_VREDRAW, GWL_HINSTANCE, GWL_HWNDPARENT, HMENU,
-            LWA_ALPHA, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SWP_HIDEWINDOW, SWP_NOACTIVATE,
-            SW_HIDE, SW_NORMAL, WM_DESTROY, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_PAINT, WNDCLASSW,
-            WS_EX_LAYERED, WS_EX_TOPMOST, WS_POPUP,
+            CloseWindow, CreateWindowExW, DefWindowProcW, GetSystemMetrics, GetWindowLongPtrW, PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, SetWindowLongPtrW, SetWindowPos, ShowWindow, CS_HREDRAW, CS_VREDRAW, GWL_HINSTANCE, GWL_HWNDPARENT, HMENU, LWA_ALPHA, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SWP_HIDEWINDOW, SWP_NOACTIVATE, SW_HIDE, SW_NORMAL, SW_SHOWNA, SW_SHOWNOACTIVATE, WM_DESTROY, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_PAINT, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOPMOST, WS_POPUP
         },
     },
 };
@@ -129,7 +124,7 @@ fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>
             return None;
         }
         let transp_win = CreateWindowExW(
-            WS_EX_LAYERED | WS_EX_TOPMOST,
+            WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
             CLASS_NAME,
             w!("Emoji picker transparent window"),
             WS_POPUP,
@@ -161,17 +156,19 @@ fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>
 pub fn generate_handlers<'a>(app: &EmojiPickerWindow) -> Option<OutsideClickHandlers<'a>> {
     let (tx, rx) = mpsc::sync_channel::<()>(1);
     // The cast to isize is to send the HWND.
+    // TODO: wrap it and mark it as Send.
     let transp_win = generate_transparent_window(app, tx)?.0 as isize;
 
     let on_open_handler = Handler::new(move |app: &EmojiPickerWindow| unsafe {
         if let Some(win) = app.window().to_hwnd() {
-            let _ = setup_transp_window_dimensions(win);
+            let transp_win = HWND(transp_win as *mut _);
+            let _ = setup_transp_window_dimensions(transp_win);
             // This is a bit of a hack, but we set the main window of the emoji
             // picker to be the child window of the transparent window. This way,
             // the emoji picker will be above the transparent window.
-            let _ = SetWindowLongPtrW(win, GWL_HWNDPARENT, transp_win);
+            let _ = SetWindowLongPtrW(win, GWL_HWNDPARENT, transp_win.0 as isize);
 
-            let _ = ShowWindow(HWND(transp_win as *mut _), SW_NORMAL);
+            let _ = ShowWindow(transp_win, SW_NORMAL);
         }
     });
     let on_close_handler = Handler::new(move |_| unsafe {
