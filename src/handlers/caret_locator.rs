@@ -1,10 +1,9 @@
 use std::ffi::c_void;
 
-use slint::{ComponentHandle as _, WindowPosition};
 use windows::{
     core::{Interface, VARIANT},
     Win32::{
-        Foundation::{POINT, RECT},
+        Foundation::{HWND, POINT, RECT},
         Graphics::Gdi::{GetMonitorInfoW, MonitorFromPoint, MONITORINFO, MONITOR_DEFAULTTONEAREST},
         UI::{
             Accessibility::{AccessibleObjectFromWindow, IAccessible},
@@ -16,11 +15,9 @@ use windows::{
     },
 };
 
-use crate::handler::Handler;
-use crate::EmojiPickerWindow;
+use crate::{backend_link::BackendLink, handler::Handler};
 
-use super::utils::ToHWND;
-
+#[derive(Debug, Clone, Copy)]
 struct Position {
     x: i32,
     y: i32,
@@ -33,28 +30,20 @@ struct CaretPosition {
     h: i32,
 }
 
-impl From<Position> for WindowPosition {
-    fn from(val: Position) -> Self {
-        WindowPosition::Physical(slint::PhysicalPosition { x: val.x, y: val.y })
-    }
-}
-
 /// Returns a position for the emoji picker window to be placed near the caret
 /// in the “work”/“safe” area.
-fn get_window_position(window: &slint::Window, cp: CaretPosition) -> Position {
+fn get_window_position(window: HWND, cp: CaretPosition) -> Position {
     let caret_height = cp.h;
     let default_position = Position {
         x: cp.x,
         y: cp.y + caret_height,
     };
 
-    unsafe fn inner(window: &slint::Window, cp: CaretPosition) -> Option<Position> {
+    unsafe fn inner(window: HWND, cp: CaretPosition) -> Option<Position> {
         let point = POINT { x: cp.x, y: cp.y };
         let window_size = {
-            let hwnd = window.to_hwnd()?;
-
             let mut lprect: RECT = { std::mem::zeroed() };
-            GetWindowRect(hwnd, &mut lprect as *mut _).ok()?;
+            GetWindowRect(window, &mut lprect as *mut _).ok()?;
             (lprect.right - lprect.left, lprect.bottom - lprect.top)
         };
 
@@ -144,11 +133,13 @@ fn get_caret_position() -> Option<CaretPosition> {
     }
 }
 
-pub fn get_handler<'a>() -> Handler<'a, EmojiPickerWindow> {
-    Handler::new(|app: &EmojiPickerWindow| {
+pub fn get_handler<'a>() -> Handler<'a, BackendLink> {
+    Handler::new(|app: &BackendLink| {
         if let Some(caret_location) = get_caret_position() {
-            let window_pos = get_window_position(app.window(), caret_location);
-            app.window().set_position(window_pos)
+            if let Some(hwnd) = app.get_main_window_hwnd() {
+                let window_pos = get_window_position(hwnd, caret_location);
+                app.set_position(window_pos);
+            }
         }
     })
 }

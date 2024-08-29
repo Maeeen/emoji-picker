@@ -18,12 +18,12 @@ back-click = []
 
 [dependencies]
 emojis = "0.6.3"
-slint = { version = "1.7.2", features = ["raw-window-handle-06"] }
+iced = "0.12.1"
 thiserror = "1.0.63"
 tray-item = { version = "0.10.0", optional = true }
 
 [build-dependencies]
-slint-build = "1.6"
+slint-build = { git = "https://github.com/slint-ui/slint.git", "rev" = "6472ab841612c05f0996bfd277e157085b7fcbff" }
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = "0.1.17"

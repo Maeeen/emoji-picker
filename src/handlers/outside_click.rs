@@ -2,7 +2,6 @@
 
 use std::sync::mpsc;
 
-use slint::ComponentHandle;
 use windows::{
     core::{w, PCWSTR},
     Win32::{
@@ -17,14 +16,11 @@ use windows::{
     },
 };
 
-use crate::handler::{Handler, MpscNotifier, Notifier};
-use crate::EmojiPickerWindow;
-
-use super::utils::ToHWND;
+use crate::{backend_link::BackendLink, handler::{Handler, MpscNotifier, Notifier}};
 
 pub struct OutsideClickHandlers<'a> {
-    pub on_open_handler: Handler<'a, EmojiPickerWindow>,
-    pub on_close_handler: Handler<'a, EmojiPickerWindow>,
+    pub on_open_handler: Handler<'a, BackendLink>,
+    pub on_close_handler: Handler<'a, BackendLink>,
     pub closer: Box<dyn Notifier<()>>,
 }
 
@@ -100,8 +96,8 @@ unsafe fn setup_transp_window_dimensions(hwnd: HWND) -> Option<()> {
 // Yeah, this is not pretty. But it's a way to send a message to the event loop.
 static mut TX: Option<mpsc::SyncSender<()>> = None;
 
-fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>) -> Option<HWND> {
-    let hwnd = app.window().to_hwnd()?;
+fn generate_transparent_window(app: &BackendLink, tx: mpsc::SyncSender<()>) -> Option<HWND> {
+    let hwnd = app.get_main_window_hwnd()?;
     let hinstance: HINSTANCE =
         unsafe { HINSTANCE(GetWindowLongPtrW(hwnd, GWL_HINSTANCE) as *mut _) };
     const CLASS_NAME: PCWSTR = w!("EmojiPickerTransparentWindow");
@@ -153,14 +149,14 @@ fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>
     };
 }
 
-pub fn generate_handlers<'a>(app: &EmojiPickerWindow) -> Option<OutsideClickHandlers<'a>> {
+pub fn generate_handlers<'a>(app: &BackendLink) -> Option<OutsideClickHandlers<'a>> {
     let (tx, rx) = mpsc::sync_channel::<()>(1);
     // The cast to isize is to send the HWND.
     // TODO: wrap it and mark it as Send.
     let transp_win = generate_transparent_window(app, tx)?.0 as isize;
 
-    let on_open_handler = Handler::new(move |app: &EmojiPickerWindow| unsafe {
-        if let Some(win) = app.window().to_hwnd() {
+    let on_open_handler = Handler::new(move |app: &BackendLink| unsafe {
+        if let Some(win) = app.get_main_window_hwnd() {
             let transp_win = HWND(transp_win as *mut _);
             let _ = setup_transp_window_dimensions(transp_win);
             // This is a bit of a hack, but we set the main window of the emoji

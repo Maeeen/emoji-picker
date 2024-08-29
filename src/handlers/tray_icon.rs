@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use tray_item::TrayItem;
 
-use crate::handler::{MpscNotifier, Notifier};
+use crate::{backend_link::BackendLink, handler::{MpscNotifier, Notifier}};
 
 struct TrayIconNotifier {
     np: MpscNotifier<()>,
@@ -25,7 +25,8 @@ pub fn initialize() -> Box<dyn Notifier<()>> {
     .unwrap();
 
     t.add_menu_item("Quit", move || {
-        slint::quit_event_loop().unwrap();
+        // TODO
+        // app.quit();
     })
     .unwrap();
 

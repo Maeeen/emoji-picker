@@ -2,3 +2,6 @@
 # TODO: add a flag to disable that or add it properly
 [build]
 rustflags=["-C", "panic=abort"]
+
+[env]
+SLINT_ENABLE_EXPERIMENTAL_FEATURES = "1"

@@ -1,5 +1,5 @@
+use crate::backend_link::BackendLink;
 use crate::handler::{Handler, Notifier};
-use crate::EmojiPickerWindow;
 
 mod close_shortcut;
 mod on_open_slint;
@@ -30,18 +30,16 @@ mod tray_icon;
 #[cfg(target_os = "windows")]
 mod outside_click;
 
-mod utils;
-
 pub struct Handlers<'a> {
     pub emoji_selected: Vec<Handler<'a, String>>,
     pub openers: Vec<Box<dyn Notifier<()>>>,
     pub closers: Vec<Box<dyn Notifier<()>>>,
-    pub on_close_handlers: Vec<Handler<'a, EmojiPickerWindow>>,
-    pub before_open_handlers: Vec<Handler<'a, EmojiPickerWindow>>,
-    pub on_open_handlers: Vec<Handler<'a, EmojiPickerWindow>>,
+    pub on_close_handlers: Vec<Handler<'a, BackendLink>>,
+    pub before_open_handlers: Vec<Handler<'a, BackendLink>>,
+    pub on_open_handlers: Vec<Handler<'a, BackendLink>>,
 }
 
-pub fn get_handlers<'a>(app: &EmojiPickerWindow) -> Handlers<'a> {
+pub fn get_handlers<'a>(app: &BackendLink) -> Handlers<'a> {
     let mut handlers = Handlers {
         emoji_selected: vec![],
         openers: vec![],

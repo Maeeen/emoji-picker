@@ -1,10 +1,7 @@
 use emoji_picker_hooker::{install_hook, uninstall_hook};
-use slint::ComponentHandle as _;
 
-use crate::handler::Handler;
-use crate::EmojiPickerWindow;
+use crate::{backend_link::BackendLink, handler::Handler};
 
-use super::utils::ToHWND;
 
 mod emoji_picker_hooker {
     // Linking DLLs on Windows with Rust is a damn shame.
@@ -15,15 +12,17 @@ mod emoji_picker_hooker {
     }
 }
 
-pub fn get_open_handler<'a>() -> Handler<'a, EmojiPickerWindow> {
-    Handler::new(|app: &EmojiPickerWindow| {
-        let r = unsafe { install_hook(app.window().to_hwnd().unwrap().0 as usize) };
-        if r != 0 {
-            eprintln!("[key_redir] Failed to set hook.");
+pub fn get_open_handler<'a>() -> Handler<'a, BackendLink> {
+    Handler::new(|app: &BackendLink| {
+        if let Some(hwnd) = app.get_main_window_hwnd() {
+            let r = unsafe { install_hook(hwnd.0 as usize) };
+            if r != 0 {
+                eprintln!("[key_redir] Failed to set hook.");
+            }
         }
     })
 }
 
-pub fn get_close_handler<'a>() -> Handler<'a, EmojiPickerWindow> {
-    Handler::new(|_: &EmojiPickerWindow| unsafe { uninstall_hook() })
+pub fn get_close_handler<'a>() -> Handler<'a, BackendLink> {
+    Handler::new(|_: &BackendLink| unsafe { uninstall_hook() })
 }
