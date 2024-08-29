@@ -73,7 +73,6 @@ component EmojiTabs inherits HorizontalLayout {
     in property <[EmojiGroupModel]> groups;
     callback scroll-requested(int);
 
-
     for group[idx] in groups: Button {
         text: group.title;
         clicked => {
@@ -82,36 +81,100 @@ component EmojiTabs inherits HorizontalLayout {
     }
 }
 
-global EmojiGroupListScroll {
-    callback set-y-pos(int, length);
-    in-out property <[length]> groups_y_pos;
-}
-
 export component EmojiGroupList {
     in property <[EmojiGroupModel]> groups;
     // This is really more a workaround than a solution
-    in-out property <[length]> groups_y_pos;
     callback emoji-selected(EmojiModel);
 
     VerticalLayout {
         EmojiTabs {
             groups: groups;
             scroll-requested(idx) => {
-                // s.viewport-y = -groups_y_pos[idx];
+                if idx == 0 { s.viewport-y = 0; }
+                else if (idx == 1) { s.viewport-y = -g1.y; }
+                else if (idx == 2) { s.viewport-y = -g2.y; }
+                else if (idx == 3) { s.viewport-y = -g3.y; }
+                else if (idx == 4) { s.viewport-y = -g4.y; }
+                else if (idx == 5) { s.viewport-y = -g5.y; }
+                else if (idx == 6) { s.viewport-y = -g6.y; }
+                else if (idx == 7) { s.viewport-y = -g7.y; }
+                else if (idx == 8) { s.viewport-y = -g8.y; }
             }
         }
 
         s := ScrollView {
             VerticalLayout {
-                for group[index] in groups: EmojiGroup {
-                    title: group.title;
-                    emojis: group;
+                // Sadly this is a limitation but it's too hard to make scroll happen
+                // with a for loop
+                g0 := EmojiGroup {
+                    title: groups[0].title;
+                    emojis: groups[0];
                     emoji-selected(e) => {
                         emoji-selected(e);
                     }
-                    init() => {
-                        EmojiGroupListScroll.set-y-pos(index, self.y);
-                        // groups_y_pos_[index] = self.y;
+                }
+
+                g1 := EmojiGroup {
+                    title: groups[1].title;
+                    emojis: groups[1];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g2 := EmojiGroup {
+                    title: groups[2].title;
+                    emojis: groups[2];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g3 := EmojiGroup {
+                    title: groups[3].title;
+                    emojis: groups[3];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g4 := EmojiGroup {
+                    title: groups[4].title;
+                    emojis: groups[4];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g5 := EmojiGroup {
+                    title: groups[5].title;
+                    emojis: groups[5];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g6 := EmojiGroup {
+                    title: groups[6].title;
+                    emojis: groups[6];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g7 := EmojiGroup {
+                    title: groups[7].title;
+                    emojis: groups[7];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g8 := EmojiGroup {
+                    title: groups[8].title;
+                    emojis: groups[8];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
                     }
                 }
             }

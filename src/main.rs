@@ -193,8 +193,6 @@ fn init_emojis(app: &EmojiPickerWindow) {
     let model = ModelRc::new(VecModel::from(almost_model));
     app.set_emoji_groups(model);
     
-    let scroll_model = ModelRc::new(VecModel::from(0..nb_groups));
-    app.window().
 
     let weak_app = app.as_weak();
 
