@@ -1,10 +1,9 @@
 use handlers::Handlers;
-use slint::{ModelRc, SharedString, VecModel};
-use std::{
-    collections::{BTreeMap, HashMap}, iter::Map, sync::{Arc, RwLock}
-};
+use slint::{Model, ModelRc};
+use std::sync::{Arc, RwLock};
 
 mod emoji;
+mod emoji_model;
 mod handler;
 mod handlers;
 mod poller;
@@ -126,93 +125,19 @@ fn main() {
     poller_for_close.signal_stop();
 }
 
-// TODO: dissociate all below into a separate file
-
-/// An equivalent of EmojiGroupModel's from Slint in Rust
-struct EmojiGroupModelR {
-    title: String,
-    emojis: Vec<EmojiModel>,
-}
-
-impl EmojiGroupModelR {
-    fn new(title: String, emojis: Vec<EmojiModel>) -> Self {
-        Self { title, emojis }
-    }
-}
-
-impl Default for EmojiGroupModelR {
-    fn default() -> Self {
-        Self {
-            title: String::new(),
-            emojis: Vec::new(),
-        }
-    }
-}
-
-impl From<EmojiGroupModelR> for EmojiGroupModel {
-    fn from(model: EmojiGroupModelR) -> Self {
-        Self {
-            title: model.title.into(),
-            emojis: ModelRc::new(VecModel::from(model.emojis)),
-        }
-    }
-}
-
 /// This function initializes the emoji buttons in the app.
 /// It also sets up the filter function to filter the emojis
 fn init_emojis(app: &EmojiPickerWindow) {
-    use emoji::*;
+    let model = emoji_model::VecEmojiGroupModel::new();
+    let model = ModelRc::new(model);
 
-    let emojis_groupped: HashMap<EmojiGroupWrapper, Vec<EmojiModel>> = {
-        list_emojis()
-            .into_iter()
-            .fold(HashMap::new(), |mut acc, emoji| {
-                let filename = emoji.get_filename_path();
-                let image = slint::Image::load_from_path(&filename);
+    app.set_emoji_groups(model.clone());
 
-                if let Some(image) = image.ok() {
-                    let model = EmojiModel {
-                        name: emoji.name().into(),
-                        code: emoji.code().into(),
-                        image,
-                    };
-
-                    acc.entry(emoji.group()).or_insert_with(Vec::new).push(model);
-                }
-
-                acc
-            })
-    };
-
-    let mut almost_model: Vec<EmojiGroupModel> = emojis_groupped.clone()
-        .into_iter()
-        .map(|(group, emojis)| EmojiGroupModelR::new(group.group_name().into(), emojis).into())
-        .collect::<Vec<_>>();
-
-    let nb_groups = almost_model.len();
-    let model = ModelRc::new(VecModel::from(almost_model));
-    app.set_emoji_groups(model);
-    
-
-    let weak_app = app.as_weak();
-
-    // Probably not the best way to redefine a new vec each time and re-updating
-    // the VecModel but it may be a good thing to…
-    // TODO: Use a FilterModel (it may be even better to implement a custom one.)
-    let filter = move |search: SharedString| {
-        // let mut emoji_buttons = Vec::new();
-        // let search = search.to_lowercase();
-        // let filtered_emojis = emojis
-        //     .iter()
-        //     .filter(|(_, emoji)| emoji.name.contains(&search));
-        // for (_, emoji) in filtered_emojis {
-        //     emoji_buttons.push(emoji.clone());
-        // }
-        // weak_app
-        //     .upgrade()
-        //     .unwrap()
-        //     .set_emojis(ModelRc::new(VecModel::from(emoji_buttons)));
-    };
-
-    // app.set_emoji_groups(ModelRc::new(VecModel::from()))
+    app.on_filter(move |s| {
+        model
+            .as_any()
+            .downcast_ref::<emoji_model::VecEmojiGroupModel>()
+            .unwrap()
+            .filter(s.into());
+    });
 }

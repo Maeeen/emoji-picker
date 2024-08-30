@@ -4,14 +4,14 @@ import { Button, VerticalBox, TextEdit, ListView, LineEdit, AboutSlint, ScrollVi
 
 export component EmojiPickerWindow inherits Window {
     always-on-top: true;
-    width: 400px;
-    height: 600px;
+    preferred-width: 400px;
+    preferred-height: 600px;
     title: "Emojis";
     icon: @image-url("../assets/ico-16.png");
 
     in property <[EmojiGroupModel]> emoji_groups;
 
-    callback filter <=> filter-tb.edited;
+    callback filter(string);
     callback close-requested;
     callback emoji-selected(EmojiModel);
 
@@ -30,7 +30,7 @@ export component EmojiPickerWindow inherits Window {
         }
 
         VerticalBox {
-            EmojiGroupList {
+            list := EmojiGroupList {
                 groups: emoji_groups;
                 emoji-selected(e) => {
                     emoji-selected(e);
@@ -41,6 +41,10 @@ export component EmojiPickerWindow inherits Window {
                 text: "";
                 placeholder-text: "Filter emojis";
                 height: 30px;
+                edited(t) => {
+                    filter(t);
+                    list.reset-scroll();
+                }
             }
         }
     }

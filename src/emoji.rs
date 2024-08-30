@@ -6,13 +6,6 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EmojiWrapper(pub &'static emojis::Emoji);
 
-impl EmojiWrapper {
-    pub fn group(&self) -> EmojiGroupWrapper {
-        let group = self.0.group();
-        EmojiGroupWrapper(group)
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EmojiGroupWrapper(pub emojis::Group);
 
@@ -22,9 +15,9 @@ impl EmojiGroupWrapper {
     }
 }
 
-impl Into<&'static str> for EmojiGroupWrapper {
-    fn into(self) -> &'static str {
-        match self.0 {
+impl From<EmojiGroupWrapper> for &'static str {
+    fn from(group: EmojiGroupWrapper) -> &'static str {
+        match group.0 {
             emojis::Group::Activities => "Activities",
             emojis::Group::AnimalsAndNature => "Animals & Nature",
             emojis::Group::Flags => "Flags",
@@ -36,14 +29,6 @@ impl Into<&'static str> for EmojiGroupWrapper {
             emojis::Group::TravelAndPlaces => "Travel & Places",
         }
     }
-}
-
-pub fn list_emojis() -> Vec<EmojiWrapper> {
-    // TODO: It may be judicious to use both the groupped and non-groupped map 
-    // to filter only without the groups.
-    emojis::iter()
-        .map(|e| EmojiWrapper(e))
-        .collect()
 }
 
 pub trait TwemojiFilename {
