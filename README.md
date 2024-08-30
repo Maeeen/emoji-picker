@@ -68,6 +68,7 @@ Multi-platform features:
 
 ## TO-DO
 
+* [ ] “Recently used” group
 * [ ] Better emoji look-ups
 * [x] Emojis should be displayed in a grid
 * [ ] Polish design
