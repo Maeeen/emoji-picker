@@ -68,6 +68,7 @@ Multi-platform features:
 
 ## TO-DO
 
+* [ ] Better emoji look-ups
 * [x] Emojis should be displayed in a grid
 * [ ] Polish design
   * [ ] Add a *tooltip* to see the name of the emojis
