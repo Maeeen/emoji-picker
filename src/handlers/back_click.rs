@@ -99,7 +99,7 @@ unsafe fn setup_transp_window_dimensions(hwnd: HWND) -> Option<()> {
         SWP_HIDEWINDOW | SWP_NOACTIVATE,
     ) {
         eprintln!("Failed to set window position: {:?}", e);
-        return None
+        return None;
     }
 
     Some(())
