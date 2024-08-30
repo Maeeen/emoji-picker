@@ -28,7 +28,7 @@ mod tray_icon;
 
 #[cfg(feature = "back-click")]
 #[cfg(target_os = "windows")]
-mod outside_click;
+mod back_click;
 
 mod utils;
 
@@ -108,7 +108,7 @@ pub fn get_handlers<'a>(app: &EmojiPickerWindow) -> Handlers<'a> {
 
     #[cfg(feature = "back-click")]
     #[cfg(target_os = "windows")]
-    if let Some(outside_click_handlers) = outside_click::generate_handlers(app) {
+    if let Some(outside_click_handlers) = back_click::generate_handlers(app) {
         handlers
             .before_open_handlers
             .push(outside_click_handlers.on_open_handler);

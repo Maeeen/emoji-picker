@@ -64,6 +64,7 @@ Multi-platform features:
 * On Linux/macOS, there is no strict requirement for this but the missing implementations are:
   * [ ] The keyboard shortcut to open the picker. (<kbd>Win</kbd> + <kbd>.</kbd>) (`src/key_shortcut.rs`)
   * [ ] The “key interceptor” that prevents focus being made to the Emoji Picker window AND intercepts every key made while the picker is open.
+  * [ ] The “key sender” that sends keys to the main window.
 
 ## TO-DO
 
