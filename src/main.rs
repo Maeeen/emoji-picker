@@ -1,11 +1,9 @@
 use handlers::Handlers;
-use slint::{ModelRc, SharedString, VecModel};
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, RwLock},
-};
+use slint::{Model, ModelRc};
+use std::sync::{Arc, RwLock};
 
 mod emoji;
+mod emoji_model;
 mod handler;
 mod handlers;
 mod poller;
@@ -130,48 +128,16 @@ fn main() {
 /// This function initializes the emoji buttons in the app.
 /// It also sets up the filter function to filter the emojis
 fn init_emojis(app: &EmojiPickerWindow) {
-    use emoji::*;
+    let model = emoji_model::VecEmojiGroupModel::new();
+    let model = ModelRc::new(model);
 
-    let emojis: BTreeMap<_, EmojiModel> = {
-        list_emojis()
-            .into_iter()
-            .flat_map(|(key, emoji)| {
-                let filename = emoji.get_filename_path();
-                let image = slint::Image::load_from_path(&filename);
+    app.set_emoji_groups(model.clone());
 
-                image.ok().map(|image| {
-                    (
-                        key,
-                        EmojiModel {
-                            name: emoji.name().into(),
-                            code: emoji.code().into(),
-                            image,
-                        },
-                    )
-                })
-            })
-            .collect()
-    };
-    let weak_app = app.as_weak();
-
-    // Probably not the best way to redefine a new vec each time and re-updating
-    // the VecModel but it may be a good thing to…
-    // TODO: Use a FilterModel
-    let filter = move |search: SharedString| {
-        let mut emoji_buttons = Vec::new();
-        let search = search.to_lowercase();
-        let filtered_emojis = emojis
-            .iter()
-            .filter(|(_, emoji)| emoji.name.contains(&search));
-        for (_, emoji) in filtered_emojis {
-            emoji_buttons.push(emoji.clone());
-        }
-        weak_app
-            .upgrade()
+    app.on_filter(move |s| {
+        model
+            .as_any()
+            .downcast_ref::<emoji_model::VecEmojiGroupModel>()
             .unwrap()
-            .set_emojis(ModelRc::new(VecModel::from(emoji_buttons)));
-    };
-
-    filter("".into());
-    app.on_filter(filter);
+            .filter(s.into());
+    });
 }

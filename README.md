@@ -66,7 +66,8 @@ Multi-platform features:
 
 ## TO-DO
 
-* [ ] Emoji groups
+* [ ] Better name everything (notably, features)
+* [x] Emoji groups
 * [ ] Should copy to clipboard if no text box is focused
 * [ ] Skin tones
 * [x] A tray-icon (maybe?) Not a good idea to have a process floating around without showing its existence to the user.

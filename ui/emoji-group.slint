@@ -1,0 +1,212 @@
+import { Palette, Button, ListView, VerticalBox, ScrollView } from "std-widgets.slint";
+import { EmojiModel, EmojiGroupModel } from "emoji-model.slint";
+
+
+component GroupLine inherits VerticalLayout {
+    alignment: center;
+    in property <color> color;
+
+    Rectangle {
+        height: 1px;
+        background: color;
+    }
+}
+
+component GroupTitle inherits Rectangle {
+    in property <string> title: "Placeholder";
+    callback clicked;
+    width: 100%;
+    height: 30px;
+
+    HorizontalLayout {
+        padding: 5px;
+        spacing: 10px;
+        Text {
+            vertical-alignment: center;
+            horizontal-alignment: left;
+            text: title;
+        }
+
+        GroupLine {
+            color: Palette.border;
+        }
+    }
+}
+
+component EmojiButtons inherits Rectangle {
+    in-out property <bool> expanded: false;
+    in-out property <[EmojiModel]> emojis;
+    in-out property <[string]> test;
+    callback emoji-selected(EmojiModel);
+
+    VerticalLayout {
+        for emoji in emojis: Button {
+            text: emoji.name;
+            icon: emoji.image;
+            clicked => {
+                emoji-selected(emoji);
+            }
+        }
+    }
+}
+
+component EmojiGroup {
+    in property <string> title: "Placeholder title";
+    in property <EmojiGroupModel> emojis;
+
+    callback emoji-selected(EmojiModel);
+
+    VerticalLayout {
+        if emojis.emojis.length > 0: GroupTitle {
+            title: title;
+        }
+        if emojis.emojis.length > 0: EmojiButtons {
+            emojis: emojis.emojis;
+            emoji-selected(e) => {
+                emoji-selected(e);
+            }
+        }
+    }
+}
+
+component EmojiTabButton inherits Button {
+    in property <length> current-group-y;
+    in property <length> current-y;
+    in property <length> next-group-y;
+
+    primary: current-group-y <= current-y && current-y < next-group-y;
+}
+
+component EmojiTabs inherits HorizontalLayout {
+    in property <[EmojiGroupModel]> groups;
+    in property <length> scrolled-y;
+
+    pure callback y-for-group(int) -> length;
+    callback scroll-requested(int);
+
+    for group[idx] in groups: EmojiTabButton {
+        icon: group.image;
+        current-group-y: y-for-group(idx);
+        current-y: scrolled-y;
+        next-group-y: y-for-group(idx + 1);
+        clicked => {
+            scroll-requested(idx);
+        }
+    }
+}
+
+export component EmojiGroupList {
+    in property <[EmojiGroupModel]> groups;
+    // This is really more a workaround than a solution
+    callback emoji-selected(EmojiModel);
+    callback reset-scroll();
+
+    // Sadly this is a limitation but it's impossible to get
+    // the y position of elements inside a ScrollView
+    function y-for-group(idx: int) -> length {
+        if idx < 0 { return -1px; }
+        else if idx == 0 { return g0.y; }
+        else if (idx == 1) { return g1.y; }
+        else if (idx == 2) { return g2.y; }
+        else if (idx == 3) { return g3.y; }
+        else if (idx == 4) { return g4.y; }
+        else if (idx == 5) { return g5.y; }
+        else if (idx == 6) { return g6.y; }
+        else if (idx == 7) { return g7.y; }
+        else if (idx == 8) { return g8.y; }
+        else { return g8.y + g8.height; }
+    }
+
+    reset-scroll() => {
+        s.viewport-y = 0;
+    }
+
+    VerticalLayout {
+        EmojiTabs {
+            groups: groups;
+            scrolled-y: -s.viewport-y;
+            y-for-group(idx) => {
+                return y-for-group(idx);
+            }
+            scroll-requested(idx) => {
+                s.viewport-y = -y-for-group(idx)
+            }
+        }
+
+        s := ScrollView {
+            VerticalLayout {
+                g0 := EmojiGroup {
+                    title: groups[0].title;
+                    emojis: groups[0];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g1 := EmojiGroup {
+                    title: groups[1].title;
+                    emojis: groups[1];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g2 := EmojiGroup {
+                    title: groups[2].title;
+                    emojis: groups[2];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g3 := EmojiGroup {
+                    title: groups[3].title;
+                    emojis: groups[3];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g4 := EmojiGroup {
+                    title: groups[4].title;
+                    emojis: groups[4];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g5 := EmojiGroup {
+                    title: groups[5].title;
+                    emojis: groups[5];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g6 := EmojiGroup {
+                    title: groups[6].title;
+                    emojis: groups[6];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g7 := EmojiGroup {
+                    title: groups[7].title;
+                    emojis: groups[7];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+
+                g8 := EmojiGroup {
+                    title: groups[8].title;
+                    emojis: groups[8];
+                    emoji-selected(e) => {
+                        emoji-selected(e);
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,15 +1,34 @@
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-pub type EmojiMap = BTreeMap<String, EmojiWrapper>;
-pub struct EmojiWrapper(&'static emojis::Emoji);
+// These one may be required when implementing a better search.
+// pub type EmojiMap<Internal = EmojiWrapper> = BTreeMap<String, Internal>;
+// pub type EmojiGrouppedMap<Internal> = HashMap<emojis::Group, EmojiMap<Internal>>;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct EmojiWrapper(pub &'static emojis::Emoji);
 
-pub fn list_emojis() -> EmojiMap {
-    let mut emojis = BTreeMap::new();
-    for emoji in emojis::iter() {
-        emojis.insert(emoji.as_str().into(), EmojiWrapper(emoji));
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct EmojiGroupWrapper(pub emojis::Group);
+
+impl EmojiGroupWrapper {
+    pub fn group_name(&self) -> &'static str {
+        (*self).into()
     }
-    emojis
+}
+
+impl From<EmojiGroupWrapper> for &'static str {
+    fn from(group: EmojiGroupWrapper) -> &'static str {
+        match group.0 {
+            emojis::Group::Activities => "Activities",
+            emojis::Group::AnimalsAndNature => "Animals & Nature",
+            emojis::Group::Flags => "Flags",
+            emojis::Group::FoodAndDrink => "Food & Drink",
+            emojis::Group::Objects => "Objects",
+            emojis::Group::PeopleAndBody => "People & Body",
+            emojis::Group::SmileysAndEmotion => "Smileys & Emotion",
+            emojis::Group::Symbols => "Symbols",
+            emojis::Group::TravelAndPlaces => "Travel & Places",
+        }
+    }
 }
 
 pub trait TwemojiFilename {
