@@ -66,7 +66,9 @@ Multi-platform features:
 
 ## TO-DO
 
-* [ ] Emojis should be displayed in a grid (still limited because of Slint)
+* [x] Emojis should be displayed in a grid
+* [ ] Polish design
+  * [ ] Add a *tooltip* to see the name of the emojis
 * [ ] Better name everything (notably, features)
 * [x] Emoji groups
 * [ ] Should copy to clipboard if no text box is focused

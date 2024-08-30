@@ -1,7 +1,6 @@
 import { Palette, Button, ListView, VerticalBox, ScrollView } from "std-widgets.slint";
 import { EmojiModel, EmojiGroupModel } from "emoji-model.slint";
 
-
 component GroupLine inherits VerticalLayout {
     alignment: center;
     in property <color> color;
@@ -14,7 +13,6 @@ component GroupLine inherits VerticalLayout {
 
 component GroupTitle inherits Rectangle {
     in property <string> title: "Placeholder";
-    callback clicked;
     width: 100%;
     height: 30px;
 
@@ -33,19 +31,41 @@ component GroupTitle inherits Rectangle {
     }
 }
 
-component EmojiButtons inherits Rectangle {
-    in-out property <bool> expanded: false;
-    in-out property <[EmojiModel]> emojis;
-    in-out property <[string]> test;
+component EmojiButton inherits Button {
+    in property <EmojiModel> emoji;
     callback emoji-selected(EmojiModel);
 
-    VerticalLayout {
-        for emoji in emojis: Button {
-            text: emoji.name;
-            icon: emoji.image;
-            clicked => {
-                emoji-selected(emoji);
-            }
+    clicked => {
+        emoji-selected(emoji);
+    }
+
+    icon: emoji.image;
+}
+
+component EmojiButtons inherits Rectangle {
+    in-out property <[EmojiModel]> emojis;
+    callback emoji-selected(EmojiModel);
+
+    private property <length> button_width: 50px;
+    private property <length> button_height: 40px;
+
+    // How many emoji per row
+    private property <int> columns: floor(root.width / button_width);
+
+    // How many rows
+    private property <int> rows: ceil(emojis.length / columns);
+
+    height: rows * button_height;
+    width: 100%;
+
+    for emoji[index] in emojis: EmojiButton {
+        x: mod(index, columns) * button_width;
+        y: floor(index / columns) * button_height;
+        width: button_width;
+        height: button_height;
+        emoji: emoji;
+        emoji-selected(e) => {
+            emoji-selected(e);
         }
     }
 }
