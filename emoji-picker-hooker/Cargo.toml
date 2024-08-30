@@ -12,3 +12,6 @@ crate-type = ["cdylib"]
 windows-sys = { version = "0.59.0", features = [
     "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse"
 ]}
+
+[build-dependencies]
+rustc_version = "0.4.1"

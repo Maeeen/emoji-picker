@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![allow(unexpected_cfgs)]
 
 use core::{ffi::c_void, panic::PanicInfo};
 use windows_sys::Win32::{Foundation::{GetLastError, HINSTANCE}, UI::{Input::KeyboardAndMouse::VK_PACKET, WindowsAndMessaging::{CallNextHookEx, PostMessageW, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KF_UP, WH_KEYBOARD, WM_KEYDOWN, WM_KEYUP}}};
@@ -15,6 +16,10 @@ const KF_UP_MASK: u32 = KF_UP << 16;
 static mut HOOK: Volatile<HHOOK> = Volatile::new(core::ptr::null_mut());
 #[link_section = ".shared"]
 static mut WINDOW: Volatile<usize> = Volatile::new(0);
+
+#[cfg(rust_version_lt_1_76)]
+#[link(name="msvcrt")]
+extern {}
 
 // Maybe everything can be "system"
 pub unsafe extern "system" fn keyboard_hook(ncode: i32, wparam: usize, lparam: isize) -> isize {
