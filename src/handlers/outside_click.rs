@@ -58,7 +58,9 @@ unsafe extern "system" fn transparent_window_proc(
                 let _ = tx.send(());
             }
             // Hide window (despite the name, it does not destroy the window.)
-            CloseWindow(hwnd).expect("Closing window failed");
+            if let Err(e) = CloseWindow(hwnd) {
+                eprintln!("Failed to close window: {:?}", e);
+            }
         }
         WM_DESTROY => {
             PostQuitMessage(0);
@@ -74,7 +76,6 @@ unsafe extern "system" fn transparent_window_proc(
 // Mainly a function because it has to be called after the window is created
 // and shown. In the rare case one will change their monitors while the app is
 // running, this function should be called again.
-// TODO: proper error handling
 unsafe fn setup_transp_window_dimensions(hwnd: HWND) -> Option<()> {
     let virtual_screen_dim = (
         GetSystemMetrics(SM_CXVIRTUALSCREEN),
@@ -88,7 +89,7 @@ unsafe fn setup_transp_window_dimensions(hwnd: HWND) -> Option<()> {
         return None;
     }
     // Position at the top left corner of the main window
-    SetWindowPos(
+    if let Err(e) = SetWindowPos(
         hwnd,
         HWND::default(),
         0,
@@ -96,8 +97,10 @@ unsafe fn setup_transp_window_dimensions(hwnd: HWND) -> Option<()> {
         virtual_screen_dim.0,
         virtual_screen_dim.1,
         SWP_HIDEWINDOW | SWP_NOACTIVATE,
-    )
-    .expect("Failed to set window position");
+    ) {
+        eprintln!("Failed to set window position: {:?}", e);
+        return None
+    }
 
     Some(())
 }
@@ -147,8 +150,10 @@ fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>
         // Not the best flag but I want this to slightly appear only on debug builds
         let opacity: u8 = if cfg!(debug_assertions) { 128 } else { 1 };
 
-        SetLayeredWindowAttributes(transp_win, COLORREF(0), opacity, LWA_ALPHA)
-            .expect("Failed to set the window to be transparent");
+        if let Err(e) = SetLayeredWindowAttributes(transp_win, COLORREF(0), opacity, LWA_ALPHA) {
+            eprintln!("Failed to set layered window attributes: {:?}", e);
+            return None;
+        }
 
         setup_transp_window_dimensions(transp_win)?;
 
