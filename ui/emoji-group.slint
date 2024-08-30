@@ -89,12 +89,35 @@ component EmojiGroup {
     }
 }
 
-component EmojiTabButton inherits Button {
+component EmojiTabButton {
+    in property <image> icon;
     in property <length> current-group-y;
     in property <length> current-y;
     in property <length> next-group-y;
+    callback clicked();
 
-    primary: current-group-y <= current-y && current-y < next-group-y;
+    private property <bool> is-active: current-group-y <= current-y && current-y < next-group-y;
+
+    height: 30px;
+
+    TouchArea {
+        Rectangle {
+            background: is-active ? Palette.accent-background : Palette.control-background;
+            border-radius: 4px;
+            clip: true;
+
+            Image {
+                source: icon;
+                width: 20px;
+                height: 20px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+        clicked => {
+            clicked();
+        }
+    }
 }
 
 component EmojiTabs inherits HorizontalLayout {
