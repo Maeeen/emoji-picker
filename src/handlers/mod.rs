@@ -108,19 +108,17 @@ pub fn get_handlers<'a>(app: &EmojiPickerWindow) -> Handlers<'a> {
 
     #[cfg(feature = "back-click")]
     #[cfg(target_os = "windows")]
-    {
-        if let Some(outside_click_handlers) = outside_click::generate_handlers(app) {
-            handlers
-                .before_open_handlers
-                .push(outside_click_handlers.on_open_handler);
-            handlers
-                .on_close_handlers
-                .push(outside_click_handlers.on_close_handler);
-            handlers.closers.push(outside_click_handlers.closer);
-        } else {
-            eprintln!("Failed to generate outside click handlers.");
-        }
-    };
+    if let Some(outside_click_handlers) = outside_click::generate_handlers(app) {
+        handlers
+            .before_open_handlers
+            .push(outside_click_handlers.on_open_handler);
+        handlers
+            .on_close_handlers
+            .push(outside_click_handlers.on_close_handler);
+        handlers.closers.push(outside_click_handlers.closer);
+    } else {
+        eprintln!("Failed to generate outside click handlers.");
+    }
 
     handlers
 }
