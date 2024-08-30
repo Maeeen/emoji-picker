@@ -12,7 +12,12 @@ use windows::{
             NULL_BRUSH, PAINTSTRUCT,
         },
         UI::WindowsAndMessaging::{
-            CloseWindow, CreateWindowExW, DefWindowProcW, GetSystemMetrics, GetWindowLongPtrW, PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, SetWindowLongPtrW, SetWindowPos, ShowWindow, CS_HREDRAW, CS_VREDRAW, GWL_HINSTANCE, GWL_HWNDPARENT, HMENU, LWA_ALPHA, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SWP_HIDEWINDOW, SWP_NOACTIVATE, SW_HIDE, SW_NORMAL, SW_SHOWNA, SW_SHOWNOACTIVATE, WM_DESTROY, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_PAINT, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOPMOST, WS_POPUP
+            CloseWindow, CreateWindowExW, DefWindowProcW, GetSystemMetrics, GetWindowLongPtrW,
+            PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, SetWindowLongPtrW,
+            SetWindowPos, ShowWindow, CS_HREDRAW, CS_VREDRAW, GWL_HINSTANCE, GWL_HWNDPARENT, HMENU,
+            LWA_ALPHA, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SWP_HIDEWINDOW, SWP_NOACTIVATE,
+            SW_HIDE, SW_NORMAL, WM_DESTROY, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_PAINT, WNDCLASSW,
+            WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOPMOST, WS_POPUP,
         },
     },
 };
@@ -119,7 +124,7 @@ fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>
         lpszClassName: CLASS_NAME,
     };
 
-    return unsafe {
+    unsafe {
         if RegisterClassW(&wndclass as *const _) == 0 {
             return None;
         }
@@ -140,7 +145,7 @@ fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>
         .ok()?;
 
         // Not the best flag but I want this to slightly appear only on debug builds
-        let opacity: u8 = if cfg!(debug_assertions) { 128 } else { 0 };
+        let opacity: u8 = if cfg!(debug_assertions) { 128 } else { 1 };
 
         SetLayeredWindowAttributes(transp_win, COLORREF(0), opacity, LWA_ALPHA)
             .expect("Failed to set the window to be transparent");
@@ -150,7 +155,7 @@ fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>
         TX = Some(tx);
 
         Some(transp_win)
-    };
+    }
 }
 
 pub fn generate_handlers<'a>(app: &EmojiPickerWindow) -> Option<OutsideClickHandlers<'a>> {
