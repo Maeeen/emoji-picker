@@ -23,6 +23,7 @@ cargo run
 ```
 
 * For Windows 7/8 (i.e. demo), [Rust needs to be downgraded to 1.75](https://github.com/rustdesk/rustdesk/discussions/7503).
+  * Moreover, [`rowan`](https://crates.io/crates/rowan) must be downgraded to 0.15.15: `cargo update rowan@0.15.16 --precise 0.15.15`
 
 ## Features
 
