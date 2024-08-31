@@ -1,7 +1,14 @@
+export struct EmojiSkinToneModel {
+    skin-tone: int,
+    code: string,
+    image: image
+}
+
 export struct EmojiModel {
     name: string,
     code: string,
-    image: image
+    image: image,
+    skin-tones: [EmojiSkinToneModel]
 }
 
 export struct EmojiGroupModel {

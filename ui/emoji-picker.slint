@@ -1,6 +1,99 @@
 import { EmojiModel, EmojiGroupModel } from "emoji-model.slint";
 import { EmojiGroupList } from "emoji-group.slint";
-import { Button, VerticalBox, TextEdit, ListView, LineEdit, AboutSlint, ScrollView } from "std-widgets.slint";
+import { Button, VerticalBox, TextEdit, ListView, LineEdit, AboutSlint, ScrollView, HorizontalBox, Palette } from "std-widgets.slint";
+
+component SkinTonePreview {
+    in property <color> tone: #f1c856;
+    in property <bool> active: false;
+
+    callback selected();
+
+    states [
+        highlighted when active || t.has-hover: {
+            r.background: Palette.accent-background;
+        }
+        non-highlighted when !active && !t.has-hover: {
+            r.background: Palette.alternate-background;
+        }
+    ]
+
+    t := TouchArea { 
+        width: 100%;
+        height: root.height;
+        clicked => {
+            selected()
+        }
+        r := Rectangle {
+            width: root.width;
+            height: root.height;
+            animate background {
+                duration: 100ms;
+            }
+            Rectangle {
+                height: 14px;
+                width: self.height;
+                border-radius: self.width / 2;
+                background: tone;
+                border-color: Palette.control-foreground;
+                border-width: 1px;
+            }
+        }
+    }
+}
+
+component PopupSkinToneSelector {
+    in property <[color]> skintones: [#f0c95b, #f5d8c5, #e2c1ad, #b98f7e, #8b6863, #50383a];
+    in property <int> current-skintone-idx: 0;
+
+    callback selected-skin-tone(int);
+    
+    private property <length> btn-height: 24px;
+
+    width: 24px;
+
+    states [
+        expanded when expand-t.has-hover || list-t.has-hover: {
+            expand-btn.background: Palette.accent-background;
+            pop-up.height: skintones.length * btn-height;
+        }
+        normal when !expand-t.has-hover && !list-t.has-hover: {
+            expand-btn.background: Palette.control-background;
+            pop-up.height: 0px;
+        }
+    ]
+
+    list-t := TouchArea {
+        x: expand-btn.x;
+        y: expand-btn.y - list-t.height;
+        height: pop-up.height;
+        pop-up := Rectangle {
+            background: Palette.alternate-background;
+            clip: true;
+
+            VerticalLayout {
+                for skintone[idx] in skintones: SkinTonePreview {
+                    selected => {
+                        selected-skin-tone(idx)
+                    }
+                    tone: skintone;
+                    active: idx == current-skintone-idx;
+                }
+            }
+        }
+    }
+
+    expand-btn := Rectangle {
+        height: 24px;
+        animate background {
+            duration: 250ms;
+        }
+        expand-t := TouchArea {
+            width: 100%;
+            height: 100%;
+            SkinTonePreview { tone: skintones[current-skintone-idx]; }
+        }
+    }
+}
 
 export component EmojiPickerWindow inherits Window {
     always-on-top: true;
@@ -10,10 +103,11 @@ export component EmojiPickerWindow inherits Window {
     icon: @image-url("../assets/ico-16.png");
 
     in property <[EmojiGroupModel]> emoji_groups;
+    in-out property <int> selected-skin-tone;
 
     callback filter(string);
     callback close-requested;
-    callback emoji-selected(EmojiModel);
+    callback emoji-selected(string);
 
     public function on-open() {
         filter-tb.focus();
@@ -31,19 +125,29 @@ export component EmojiPickerWindow inherits Window {
 
         VerticalBox {
             list := EmojiGroupList {
+                skin-tone: selected-skin-tone;
                 groups: emoji_groups;
                 emoji-selected(e) => {
                     emoji-selected(e);
                 }
             }
             
-            filter-tb := LineEdit {
-                text: "";
-                placeholder-text: "Filter emojis";
-                height: 30px;
-                edited(t) => {
-                    filter(t);
-                    list.reset-scroll();
+            HorizontalBox {
+                filter-tb := LineEdit {
+                    text: "";
+                    placeholder-text: "Filter emojis";
+                    height: 30px;
+                    edited(t) => {
+                        filter(t);
+                        list.reset-scroll();
+                    }
+                }
+
+                PopupSkinToneSelector {
+                    current-skintone-idx: selected-skin-tone;
+                    selected-skin-tone(idx) => {
+                        selected-skin-tone = idx;
+                    }
                 }
             }
         }

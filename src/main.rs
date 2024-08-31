@@ -21,7 +21,7 @@ fn main() {
     app.on_emoji_selected({
         let handlers = handlers.clone();
         move |emoji| {
-            handlers.trigger(HandlerEvent::EmojiSelected(emoji.code.into()));
+            handlers.trigger(HandlerEvent::EmojiSelected(emoji.into()));
         }
     });
 

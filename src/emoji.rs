@@ -6,6 +6,57 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EmojiWrapper(pub &'static emojis::Emoji);
 
+impl EmojiWrapper {
+    pub fn name(&self) -> &str {
+        self.0.name()
+    }
+
+    pub fn code(&self) -> &str {
+        self.0.as_str()
+    }
+
+    pub fn skin_tones(&self) -> Option<impl Iterator<Item = Self> + Clone> {
+        self.0.skin_tones().map(|x| x.map(EmojiWrapper))
+    }
+
+    pub fn skin_tone(&self) -> Option<u16> {
+        self.0.skin_tone().and_then(EmojiWrapper::skin_tone_idx)
+    }
+
+    fn skin_tone_idx(st: emojis::SkinTone) -> Option<u16> {
+        match st {
+            emojis::SkinTone::Default => Some(0),
+            emojis::SkinTone::Light => Some(1),
+            emojis::SkinTone::MediumLight => Some(2),
+            emojis::SkinTone::Medium => Some(3),
+            emojis::SkinTone::MediumDark => Some(4),
+            emojis::SkinTone::Dark => Some(5),
+            emojis::SkinTone::LightAndMediumLight => Some(6),
+            emojis::SkinTone::LightAndMedium => Some(7),
+            emojis::SkinTone::LightAndMediumDark => Some(8),
+            emojis::SkinTone::LightAndDark => Some(9),
+            emojis::SkinTone::MediumLightAndLight => Some(10),
+            emojis::SkinTone::MediumLightAndMedium => Some(11),
+            emojis::SkinTone::MediumLightAndMediumDark => Some(12),
+            emojis::SkinTone::MediumLightAndDark => Some(13),
+            emojis::SkinTone::MediumAndLight => Some(14),
+            emojis::SkinTone::MediumAndMediumLight => Some(15),
+            emojis::SkinTone::MediumAndMediumDark => Some(16),
+            emojis::SkinTone::MediumAndDark => Some(17),
+            emojis::SkinTone::MediumDarkAndLight => Some(18),
+            emojis::SkinTone::MediumDarkAndMediumLight => Some(19),
+            emojis::SkinTone::MediumDarkAndMedium => Some(20),
+            emojis::SkinTone::MediumDarkAndDark => Some(21),
+            emojis::SkinTone::DarkAndLight => Some(22),
+            emojis::SkinTone::DarkAndMediumLight => Some(23),
+            emojis::SkinTone::DarkAndMedium => Some(24),
+            emojis::SkinTone::DarkAndMediumDark => Some(25),
+            _ => None
+        }
+    }
+}
+
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EmojiGroupWrapper(pub emojis::Group);
 
@@ -34,16 +85,6 @@ impl From<EmojiGroupWrapper> for &'static str {
 pub trait TwemojiFilename {
     fn get_filename(&self) -> String;
     fn get_filename_path(&self) -> PathBuf;
-}
-
-impl EmojiWrapper {
-    pub fn name(&self) -> &str {
-        self.0.name()
-    }
-
-    pub fn code(&self) -> &str {
-        self.0.as_str()
-    }
 }
 
 impl TwemojiFilename for EmojiWrapper {

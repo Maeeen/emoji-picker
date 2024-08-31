@@ -33,18 +33,23 @@ component GroupTitle inherits Rectangle {
 
 component EmojiButton inherits Button {
     in property <EmojiModel> emoji;
-    callback emoji-selected(EmojiModel);
+    in property <int> skin-tone;
+    callback emoji-selected(string);
+
+    icon: 
+        emoji.skin-tones.length > skin-tone && emoji.skin-tones.length > 0 ? emoji.skin-tones[skin-tone].image : emoji.image;
+    private property <string> code: 
+        emoji.skin-tones.length > skin-tone && emoji.skin-tones.length > 0 ? emoji.skin-tones[skin-tone].code : emoji.code;
 
     clicked => {
-        emoji-selected(emoji);
+        emoji-selected(code);
     }
-
-    icon: emoji.image;
 }
 
 component EmojiButtons inherits Rectangle {
+    in property <int> skin-tone;
     in-out property <[EmojiModel]> emojis;
-    callback emoji-selected(EmojiModel);
+    callback emoji-selected(string);
 
     private property <length> button_width: 50px;
     private property <length> button_height: 40px;
@@ -63,6 +68,7 @@ component EmojiButtons inherits Rectangle {
         y: floor(index / columns) * button_height;
         width: button_width;
         height: button_height;
+        skin-tone: skin-tone;
         emoji: emoji;
         emoji-selected(e) => {
             emoji-selected(e);
@@ -73,8 +79,9 @@ component EmojiButtons inherits Rectangle {
 component EmojiGroup {
     in property <string> title: "Placeholder title";
     in property <EmojiGroupModel> emojis;
+    in property <int> skin-tone;
 
-    callback emoji-selected(EmojiModel);
+    callback emoji-selected(string);
 
     VerticalLayout {
         if emojis.emojis.length > 0: GroupTitle {
@@ -82,6 +89,7 @@ component EmojiGroup {
         }
         if emojis.emojis.length > 0: EmojiButtons {
             emojis: emojis.emojis;
+            skin-tone: skin-tone;
             emoji-selected(e) => {
                 emoji-selected(e);
             }
@@ -139,9 +147,11 @@ component EmojiTabs inherits HorizontalLayout {
 }
 
 export component EmojiGroupList {
+    in property <int> skin-tone;
+
     in property <[EmojiGroupModel]> groups;
     // This is really more a workaround than a solution
-    callback emoji-selected(EmojiModel);
+    callback emoji-selected(string);
     callback reset-scroll();
 
     // Sadly this is a limitation but it's impossible to get
@@ -179,6 +189,7 @@ export component EmojiGroupList {
         s := ScrollView {
             VerticalLayout {
                 g0 := EmojiGroup {
+                    skin-tone: skin-tone;
                     title: groups[0].title;
                     emojis: groups[0];
                     emoji-selected(e) => {
@@ -187,6 +198,7 @@ export component EmojiGroupList {
                 }
 
                 g1 := EmojiGroup {
+                    skin-tone: skin-tone;
                     title: groups[1].title;
                     emojis: groups[1];
                     emoji-selected(e) => {
@@ -195,6 +207,7 @@ export component EmojiGroupList {
                 }
 
                 g2 := EmojiGroup {
+                    skin-tone: skin-tone;
                     title: groups[2].title;
                     emojis: groups[2];
                     emoji-selected(e) => {
@@ -203,6 +216,7 @@ export component EmojiGroupList {
                 }
 
                 g3 := EmojiGroup {
+                    skin-tone: skin-tone;
                     title: groups[3].title;
                     emojis: groups[3];
                     emoji-selected(e) => {
@@ -211,6 +225,7 @@ export component EmojiGroupList {
                 }
 
                 g4 := EmojiGroup {
+                    skin-tone: skin-tone;
                     title: groups[4].title;
                     emojis: groups[4];
                     emoji-selected(e) => {
@@ -219,6 +234,7 @@ export component EmojiGroupList {
                 }
 
                 g5 := EmojiGroup {
+                    skin-tone: skin-tone;
                     title: groups[5].title;
                     emojis: groups[5];
                     emoji-selected(e) => {
@@ -227,6 +243,7 @@ export component EmojiGroupList {
                 }
 
                 g6 := EmojiGroup {
+                    skin-tone: skin-tone;
                     title: groups[6].title;
                     emojis: groups[6];
                     emoji-selected(e) => {
@@ -235,6 +252,7 @@ export component EmojiGroupList {
                 }
 
                 g7 := EmojiGroup {
+                    skin-tone: skin-tone;
                     title: groups[7].title;
                     emojis: groups[7];
                     emoji-selected(e) => {
@@ -243,6 +261,7 @@ export component EmojiGroupList {
                 }
 
                 g8 := EmojiGroup {
+                    skin-tone: skin-tone;
                     title: groups[8].title;
                     emojis: groups[8];
                     emoji-selected(e) => {

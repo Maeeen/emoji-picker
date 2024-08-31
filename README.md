@@ -76,7 +76,8 @@ Multi-platform features:
 * [ ] Better name everything (notably, features)
 * [x] Emoji groups
 * [ ] Should copy to clipboard if no text box is focused
-* [ ] Skin tones
+* [x] Skin tones
+  * [ ] More support for multiple-skin tone emojis
 * [x] A tray-icon (maybe?) Not a good idea to have a process floating around without showing its existence to the user.
 * [ ] Better readme and showcase
 * [x] The search text input should be automatically focused on opening
