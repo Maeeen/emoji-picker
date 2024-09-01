@@ -16,10 +16,9 @@ use windows::{
     },
 };
 
-use crate::handler::Handler;
-use crate::EmojiPickerWindow;
+use crate::{handler::Handler, SharedApp};
 
-use super::utils::ToHWND;
+use super::{utils::ToHWND, BeforeOpenHandler, NotifierReason};
 
 struct Position {
     x: i32,
@@ -144,11 +143,19 @@ fn get_caret_position() -> Option<CaretPosition> {
     }
 }
 
-pub fn get_handler<'a>() -> Handler<'a, EmojiPickerWindow> {
-    Handler::new(|app: &EmojiPickerWindow| {
-        if let Some(caret_location) = get_caret_position() {
-            let window_pos = get_window_position(app.window(), caret_location);
-            app.window().set_position(window_pos)
+pub fn get_handler<'a>() -> BeforeOpenHandler<'a> {
+    Handler::new(|args: &(SharedApp, NotifierReason)| {
+        let (app, reason) = args;
+
+        if *reason != NotifierReason::Shortcut {
+            return;
         }
+
+        let _ = app.weak_ui().upgrade_in_event_loop(move |ui| {
+            if let Some(caret_location) = get_caret_position() {
+                let window_pos = get_window_position(ui.window(), caret_location);
+                ui.window().set_position(window_pos)
+            }
+        });
     })
 }

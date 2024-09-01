@@ -1,6 +1,6 @@
-use handlers::{HandlerEvent, HandlerNotifyEvent, Handlers};
-use slint::{Model, ModelRc};
-use std::sync::{Arc, RwLock};
+use handlers::{HandlerEvent, HandlerNotifyEvent, Handlers, NotifierReason};
+use slint::{Model, ModelRc, Weak};
+use std::sync::{Arc, Mutex, RwLock};
 
 mod emoji;
 mod emoji_model;
@@ -10,54 +10,80 @@ mod poller;
 
 slint::include_modules!();
 
+type SharedApp = Arc<App>;
+struct App {
+    ui: Arc<Mutex<Weak<EmojiPickerWindow>>>,
+    open_source: RwLock<NotifierReason>,
+}
+
+impl App {
+    pub fn new(ui: Weak<EmojiPickerWindow>) -> Self {
+        Self {
+            ui: Arc::new(Mutex::new(ui)),
+            open_source: RwLock::new(NotifierReason::None),
+        }
+    }
+
+    pub fn weak_ui(&self) -> Weak<EmojiPickerWindow> {
+        self.ui.lock().unwrap().clone()
+    }
+
+    pub fn set_reason(&self, reason: NotifierReason) {
+        *self.open_source.write().unwrap() = reason;
+    }
+
+    pub fn get_reason(&self) -> NotifierReason {
+        *self.open_source.read().unwrap()
+    }
+}
+
 fn main() {
-    let app = EmojiPickerWindow::new().expect("Failed to create window.");
+    let ui = EmojiPickerWindow::new().expect("Failed to create window.");
+    let app = Arc::new(App::new(ui.as_weak()));
+    let handlers = Arc::new(Handlers::new(&ui));
 
-    let handlers = Arc::new(Handlers::new(&app));
-
-    init_emojis(&app);
+    init_emojis(&ui);
 
     // Setup emoji selected
-    app.on_emoji_selected({
-        let handlers = handlers.clone();
+    ui.on_emoji_selected({
+        let (app, handlers) = (app.clone(), handlers.clone());
         move |emoji| {
-            handlers.trigger(HandlerEvent::EmojiSelected(emoji.into()));
+            handlers.trigger(HandlerEvent::EmojiSelected(&(app.clone(), emoji.into())));
         }
     });
 
     // Setup close handlers
-    app.window().on_close_requested({
-        let app = app.as_weak();
-        let handlers = handlers.clone();
+    ui.window().on_close_requested({
+        let (app, handlers) = (app.clone(), handlers.clone());
         move || {
-            let app = app.upgrade().unwrap();
-            handlers.trigger(HandlerEvent::Close(&app));
+            handlers.trigger(HandlerEvent::Close(&(app.clone(), NotifierReason::None)));
             slint::CloseRequestResponse::HideWindow
         }
     });
 
     // Caller to open a window and call the open handlers
     let open_window = {
-        let app = app.as_weak();
-        let handlers = handlers.clone();
-        move || {
-            let handlers = handlers.clone();
-            app.upgrade_in_event_loop(move |app| {
-                handlers.trigger(HandlerEvent::BeforeOpen(&app));
-                app.window().show().expect("Failed to show window.");
-                handlers.trigger(HandlerEvent::Open(&app));
+        let (app, ui, handlers) = (app.clone(), ui.as_weak(), handlers.clone());
+        move |reason: NotifierReason| {
+            app.set_reason(reason);
+            handlers.trigger(HandlerEvent::BeforeOpen(&(app.clone(), reason)));
+            ui.upgrade_in_event_loop({
+                let (handlers, app) = (handlers.clone(), app.clone());
+                move |ui| {
+                    ui.window().show().expect("Failed to show window.");
+                    handlers.trigger(HandlerEvent::Open(&(app, reason)));
+                }
             })
             .unwrap();
         }
     };
 
     let close_window = {
-        let app = app.as_weak();
-        let handlers = handlers.clone();
-        move || {
+        let (ui, handlers) = (ui.as_weak(), handlers.clone());
+        move |reason| {
             let handlers = handlers.clone();
-            app.upgrade_in_event_loop(move |app| {
-                handlers.trigger(HandlerEvent::Close(&app));
+            handlers.trigger(HandlerEvent::Close(&(app.clone(), reason)));
+            ui.upgrade_in_event_loop(move |app| {
                 app.window().hide().expect("Failed to hide window.");
             })
             .unwrap();

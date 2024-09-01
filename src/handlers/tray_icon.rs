@@ -3,24 +3,24 @@ use tray_item::TrayItem;
 
 use crate::handler::{MpscNotifier, Notifier};
 
+use super::{NotifiersArgs, OpenerNotifier};
+
 struct TrayIconNotifier {
-    np: MpscNotifier<()>,
+    np: MpscNotifier<NotifiersArgs>,
     // If not there, the tray icon will be destroyed.
     #[allow(dead_code)]
-    t: TrayItem, // See if lower bounds are sufficient
+    t: TrayItem, // To prevent the tray icon from being dropped.
 }
 
-/// This returns the open notifier.
-pub fn initialize() -> Box<dyn Notifier<()>> {
-    let (tx, rx) = mpsc::sync_channel::<()>(1);
+/// This returns the notifier that opens.
+pub fn initialize() -> OpenerNotifier {
+    let (tx, rx) = mpsc::sync_channel::<NotifiersArgs>(1);
     let mut t =
         TrayItem::new("Emoji picker", tray_item::IconSource::Resource("tray-icon")).unwrap();
 
-    t.add_label("Emoji picker").unwrap();
-
     // TODO: do something else than unwrap.
     t.add_menu_item("Show", move || {
-        tx.send(()).unwrap();
+        tx.send(super::NotifierReason::TrayIcon).unwrap();
     })
     .unwrap();
 
@@ -35,8 +35,8 @@ pub fn initialize() -> Box<dyn Notifier<()>> {
     })
 }
 
-impl Notifier<()> for TrayIconNotifier {
-    fn has_notified(&self) -> Option<()> {
+impl Notifier<NotifiersArgs> for TrayIconNotifier {
+    fn has_notified(&self) -> Option<NotifiersArgs> {
         self.np.has_notified()
     }
 }

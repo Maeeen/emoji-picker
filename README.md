@@ -75,7 +75,8 @@ Multi-platform features:
   * [ ] Add a *tooltip* to see the name of the emojis
 * [ ] Better name everything (notably, features)
 * [x] Emoji groups
-* [ ] Should copy to clipboard if no text box is focused
+* [x] Should copy to clipboard if no text box is focused
+  * Copies to clipboard if opened without the shortcut.
 * [x] Skin tones
   * [ ] More support for multiple-skin tone emojis
 * [x] A tray-icon (maybe?) Not a good idea to have a process floating around without showing its existence to the user.

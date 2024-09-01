@@ -22,15 +22,20 @@ use windows::{
     },
 };
 
-use crate::handler::{Handler, MpscNotifier, Notifier};
 use crate::EmojiPickerWindow;
+use crate::{
+    handler::{Handler, MpscNotifier},
+    SharedApp,
+};
 
-use super::utils::ToHWND;
+use super::{
+    utils::ToHWND, CloserNotifier, NotifierReason, NotifiersArgs, OnCloseHandler, OnOpenHandler,
+};
 
 pub struct OutsideClickHandlers<'a> {
-    pub on_open_handler: Handler<'a, EmojiPickerWindow>,
-    pub on_close_handler: Handler<'a, EmojiPickerWindow>,
-    pub closer: Box<dyn Notifier<()>>,
+    pub on_open_handler: OnOpenHandler<'a>,
+    pub on_close_handler: OnCloseHandler<'a>,
+    pub closer: CloserNotifier,
 }
 
 unsafe extern "system" fn transparent_window_proc(
@@ -55,7 +60,7 @@ unsafe extern "system" fn transparent_window_proc(
         WM_LBUTTONUP..=WM_MBUTTONDBLCLK => {
             // Any mouse event
             if let Some(tx) = TX.as_ref() {
-                let _ = tx.send(());
+                let _ = tx.send(NotifierReason::Backclick);
             }
             // Hide window (despite the name, it does not destroy the window.)
             if let Err(e) = CloseWindow(hwnd) {
@@ -106,10 +111,13 @@ unsafe fn setup_transp_window_dimensions(hwnd: HWND) -> Option<()> {
 }
 
 // Yeah, this is not pretty. But it's a way to send a message to the event loop.
-static mut TX: Option<mpsc::SyncSender<()>> = None;
+static mut TX: Option<mpsc::SyncSender<NotifierReason>> = None;
 
-fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>) -> Option<HWND> {
-    let hwnd = app.window().to_hwnd()?;
+fn generate_transparent_window(
+    window: &slint::Window,
+    tx: mpsc::SyncSender<NotifiersArgs>,
+) -> Option<HWND> {
+    let hwnd = window.to_hwnd()?;
     let hinstance: HINSTANCE =
         unsafe { HINSTANCE(GetWindowLongPtrW(hwnd, GWL_HINSTANCE) as *mut _) };
     const CLASS_NAME: PCWSTR = w!("EmojiPickerTransparentWindow");
@@ -163,23 +171,31 @@ fn generate_transparent_window(app: &EmojiPickerWindow, tx: mpsc::SyncSender<()>
     }
 }
 
-pub fn generate_handlers<'a>(app: &EmojiPickerWindow) -> Option<OutsideClickHandlers<'a>> {
-    let (tx, rx) = mpsc::sync_channel::<()>(1);
+pub fn generate_handlers<'a>(ui: &EmojiPickerWindow) -> Option<OutsideClickHandlers<'a>> {
+    let (tx, rx) = mpsc::sync_channel::<NotifiersArgs>(1);
     // The cast to isize is to send the HWND.
     // TODO: wrap it and mark it as Send.
-    let transp_win = generate_transparent_window(app, tx)?.0 as isize;
+    let transp_win = generate_transparent_window(ui.window(), tx)?.0 as isize;
 
-    let on_open_handler = Handler::new(move |app: &EmojiPickerWindow| unsafe {
-        if let Some(win) = app.window().to_hwnd() {
-            let transp_win = HWND(transp_win as *mut _);
-            let _ = setup_transp_window_dimensions(transp_win);
-            // This is a bit of a hack, but we set the main window of the emoji
-            // picker to be the child window of the transparent window. This way,
-            // the emoji picker will be above the transparent window.
-            let _ = SetWindowLongPtrW(win, GWL_HWNDPARENT, transp_win.0 as isize);
+    let on_open_handler = Handler::new(move |args: &(SharedApp, NotifiersArgs)| {
+        let (app, reason) = args;
 
-            let _ = ShowWindow(transp_win, SW_NORMAL);
+        if *reason != NotifierReason::Shortcut {
+            return;
         }
+
+        let _ = app.weak_ui().upgrade_in_event_loop(move |ui| unsafe {
+            if let Some(win) = ui.window().to_hwnd() {
+                let transp_win = HWND(transp_win as *mut _);
+                let _ = setup_transp_window_dimensions(transp_win);
+                // This is a bit of a hack, but we set the main window of the emoji
+                // picker to be the child window of the transparent window. This way,
+                // the emoji picker will be above the transparent window.
+                let _ = SetWindowLongPtrW(win, GWL_HWNDPARENT, transp_win.0 as isize);
+
+                let _ = ShowWindow(transp_win, SW_NORMAL);
+            }
+        });
     });
     let on_close_handler = Handler::new(move |_| unsafe {
         let _ = ShowWindow(HWND(transp_win as *mut _), SW_HIDE);

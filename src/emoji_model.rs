@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use crate::{
     emoji::{EmojiGroupWrapper, EmojiWrapper},
-    EmojiGroupModel, EmojiSkinToneModel, EmojiModel,
+    EmojiGroupModel, EmojiModel, EmojiSkinToneModel,
 };
 use slint::{Model, ModelNotify, ModelRc, VecModel};
 
@@ -17,12 +17,13 @@ impl From<EmojiWrapper> for EmojiModel {
             name: e.name().into(),
             code: e.code().into(),
             image: image.unwrap_or_default(),
-            skin_tones: ModelRc::new(VecModel::from(
-                match e.skin_tones() {
-                    Some(iterator) => iterator.map(EmojiSkinToneModel::try_from).map(|f| f.ok()).flatten().collect(),
-                    None => vec![],
-                },
-            )),
+            skin_tones: ModelRc::new(VecModel::from(match e.skin_tones() {
+                Some(iterator) => iterator
+                    .map(EmojiSkinToneModel::try_from)
+                    .flat_map(|f| f.ok())
+                    .collect(),
+                None => vec![],
+            })),
         }
     }
 }
@@ -36,11 +37,13 @@ impl TryFrom<EmojiWrapper> for EmojiSkinToneModel {
         let filename = e.get_filename_path();
         let image = slint::Image::load_from_path(&filename);
 
-        e.skin_tone().map(|skin_tone| EmojiSkinToneModel {
-            code: e.code().into(),
-            image: image.unwrap_or_default(),
-            skin_tone: skin_tone.into(),
-        }).ok_or(())
+        e.skin_tone()
+            .map(|skin_tone| EmojiSkinToneModel {
+                code: e.code().into(),
+                image: image.unwrap_or_default(),
+                skin_tone: skin_tone.into(),
+            })
+            .ok_or(())
     }
 }
 

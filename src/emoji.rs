@@ -1,8 +1,5 @@
 use std::path::PathBuf;
 
-// These one may be required when implementing a better search.
-// pub type EmojiMap<Internal = EmojiWrapper> = BTreeMap<String, Internal>;
-// pub type EmojiGrouppedMap<Internal> = HashMap<emojis::Group, EmojiMap<Internal>>;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EmojiWrapper(pub &'static emojis::Emoji);
 
@@ -51,11 +48,10 @@ impl EmojiWrapper {
             emojis::SkinTone::DarkAndMediumLight => Some(23),
             emojis::SkinTone::DarkAndMedium => Some(24),
             emojis::SkinTone::DarkAndMediumDark => Some(25),
-            _ => None
+            _ => None,
         }
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EmojiGroupWrapper(pub emojis::Group);

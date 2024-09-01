@@ -16,7 +16,9 @@ use windows::Win32::{
 
 use crate::handler::Notifier;
 
-static mut HOOK_CHANNEL: Option<SyncSender<()>> = None;
+use super::{NotifierReason, NotifiersArgs};
+
+static mut HOOK_CHANNEL: Option<SyncSender<NotifiersArgs>> = None;
 
 unsafe extern "system" fn keyboard_hook(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     let kbd: KBDLLHOOKSTRUCT = unsafe { *(lparam.0 as *const KBDLLHOOKSTRUCT) };
@@ -30,7 +32,7 @@ unsafe extern "system" fn keyboard_hook(code: i32, wparam: WPARAM, lparam: LPARA
     {
         let tx = unsafe { HOOK_CHANNEL.as_ref() };
         if let Some(tx) = tx {
-            tx.send(()).unwrap();
+            tx.send(NotifierReason::Shortcut).unwrap();
         }
         return LRESULT(1);
     }
@@ -45,11 +47,11 @@ pub enum KeyShortcutError {
     HookError(#[from] windows::core::Error),
 }
 
-pub struct KeyShortcut(usize, Mutex<Receiver<()>>);
+pub struct KeyShortcut(usize, Mutex<Receiver<NotifiersArgs>>);
 
 impl KeyShortcut {
     pub fn create() -> Result<Self, KeyShortcutError> {
-        let (tx, rx) = std::sync::mpsc::sync_channel(1);
+        let (tx, rx) = std::sync::mpsc::sync_channel::<NotifiersArgs>(1);
         unsafe {
             HOOK_CHANNEL = Some(tx);
         };
@@ -66,8 +68,8 @@ impl KeyShortcut {
     }
 }
 
-impl Notifier<()> for KeyShortcut {
-    fn has_notified(&self) -> Option<()> {
+impl Notifier<NotifiersArgs> for KeyShortcut {
+    fn has_notified(&self) -> Option<NotifiersArgs> {
         self.1.lock().unwrap().try_recv().ok()
     }
 }
