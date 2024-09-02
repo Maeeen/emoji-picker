@@ -69,7 +69,8 @@ Multi-platform features:
 ## TO-DO
 
 * [ ] “Recently used” group
-* [ ] Better emoji look-ups
+* [x] Better emoji look-ups
+  * Uses shortcodes
 * [x] Emojis should be displayed in a grid
 * [ ] Polish design
   * [ ] Add a *tooltip* to see the name of the emojis

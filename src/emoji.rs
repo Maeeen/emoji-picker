@@ -16,6 +16,10 @@ impl EmojiWrapper {
         self.0.skin_tones().map(|x| x.map(EmojiWrapper))
     }
 
+    pub fn shortcodes(&self) -> impl Iterator<Item = &str> {
+        self.0.shortcodes()
+    }
+
     pub fn skin_tone(&self) -> Option<u16> {
         self.0.skin_tone().and_then(EmojiWrapper::skin_tone_idx)
     }

@@ -4,7 +4,7 @@ use crate::{
     emoji::{EmojiGroupWrapper, EmojiWrapper},
     EmojiGroupModel, EmojiModel, EmojiSkinToneModel,
 };
-use slint::{Model, ModelNotify, ModelRc, VecModel};
+use slint::{Model, ModelNotify, ModelRc, SharedString, VecModel};
 
 impl From<EmojiWrapper> for EmojiModel {
     fn from(e: EmojiWrapper) -> EmojiModel {
@@ -17,6 +17,7 @@ impl From<EmojiWrapper> for EmojiModel {
             name: e.name().into(),
             code: e.code().into(),
             image: image.unwrap_or_default(),
+            shortcodes: ModelRc::new(VecModel::from(e.shortcodes().map(|x| SharedString::from(x)).collect::<Vec<_>>())),
             skin_tones: ModelRc::new(VecModel::from(match e.skin_tones() {
                 Some(iterator) => iterator
                     .map(EmojiSkinToneModel::try_from)
@@ -71,7 +72,7 @@ impl VecEmojiListModel {
     fn filter_down(&self, filter: String) {
         let filter = filter.to_lowercase();
         let mut emojis = self.vec.borrow_mut();
-        emojis.retain(|x| x.name.contains(&filter));
+        VecEmojiListModel::retain_search(&mut emojis, &filter);
         self.filter.replace(filter);
         self.notify.reset()
     }
@@ -79,10 +80,16 @@ impl VecEmojiListModel {
     pub fn filter_up(&self, filter: String) {
         let filter = filter.to_lowercase();
         let mut emojis = self.initial.borrow().clone();
-        emojis.retain(|x| x.name.to_lowercase().contains(&filter));
+        VecEmojiListModel::retain_search(&mut emojis, &filter);
         self.filter.replace(filter);
         self.vec.replace(emojis);
         self.notify.reset()
+    }
+
+    fn retain_search(v: &mut Vec<EmojiModel>, filter: &str) {
+        v.retain(|x| {
+            x.name.contains(&filter) || x.shortcodes.iter().any(|s| s.contains(&filter))
+        })
     }
 }
 
