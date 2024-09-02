@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use handlers::{HandlerEvent, HandlerNotifyEvent, Handlers, NotifierReason};
 use slint::{Model, ModelRc, Weak};
 use std::sync::{Arc, Mutex, RwLock};

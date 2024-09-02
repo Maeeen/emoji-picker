@@ -62,6 +62,7 @@ Multi-platform features:
 
 * The main target is Windows 11, but it should work on older versions of Windows as well. No need for administrator privileges.
 * On Linux/macOS, there is no strict requirement for this but the missing implementations are:
+  * [ ] The caret locator (`src/caret_locator.rs`) that places the window near the caret.
   * [ ] The keyboard shortcut to open the picker. (<kbd>Win</kbd> + <kbd>.</kbd>) (`src/key_shortcut.rs`)
   * [ ] The “key interceptor” that prevents focus being made to the Emoji Picker window AND intercepts every key made while the picker is open.
   * [ ] The “key sender” that sends keys to the main window.
