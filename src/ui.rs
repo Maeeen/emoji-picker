@@ -7,7 +7,7 @@ use gpui::{
 
 use crate::{
     provider::{Emoji, EmojiCategory, EmojiProvider},
-    ui::grid::{DynamicGrid, DynamicGridScrollHandle, DynamicGridView},
+    ui::grid::{DynamicGrid, DynamicGridScrollHandle, DynamicGridView, GridScrollbar},
 };
 mod dwm;
 mod grid;
@@ -134,49 +134,6 @@ impl Render for MainWindow {
             .flex_col()
             .size_full()
             .child(grid.border_2().border_color(rgb(0xffff00)))
-        // div()
-        //     .flex()
-        //     .flex_col()
-        //     .flex_grow()
-        //     .w_full()
-        //     .gap_2()
-        //     .border_color(rgb(0xff0000))
-        //     .border_2()
-        //     .child(
-        //         div()
-        //             .flex()
-        //             .flex_row()
-        //             .flex_grow()
-        //             .w_full()
-        //             .gap_2()
-        //             .items_stretch()
-        //             .border_color(rgb(0xff0000))
-        //             .border_2()
-        //             .child(div().flex_grow().child("oops\ncaca"))
-        //             .child(div().flex_grow().child(grid)),
-        //     )
-        //     .child(
-        //         div()
-        //             .flex()
-        //             .flex_row()
-        //             .w_full()
-        //             .gap_2()
-        //             .child(div().flex_grow().child("mdr"))
-        //             .child(div().flex_grow().child("oops")),
-        //     )
-        // div()
-        //     .v_flex()
-        //     .gap_2()
-        //     .size_full()
-        //     .items_center()
-        //     .justify_center()
-        //     .child("Hello2, World!")
-        //     .child(
-        //         Button::new("ok")
-        //             .primary()
-        //             .label("Let's Go!")
-        //             .on_click(|_, _, _| println!("Clicked!")),
-        //     )
-        //     .child(List::new(&self.emoji_list))
+            .child(GridScrollbar::new(self.grid_state.clone()))
     }
 }
