@@ -1,32 +1,91 @@
 use gpui::{
-    point, size, AnyElement, App, AvailableSpace, Element, GlobalElementId, Hitbox,
-    InspectorElementId, Interactivity, IntoElement, IsZero, LayoutId, Pixels, Point, Size, Window,
+    point, size, AnyElement, App, AvailableSpace, Bounds, ContentMask, Element, GlobalElementId,
+    Hitbox, InspectorElementId, Interactivity, IntoElement, IsZero, LayoutId, Pixels, Point,
+    PointRefinement, ScrollHandle, Size, Styled, Window,
 };
+use gpui::{Overflow, StatefulInteractiveElement, StyleRefinement};
+use std::{cell::RefCell, rc::Rc}; // provides .track_scroll()
 
 pub struct DynamicGrid {
-    delegate: Box<dyn GridDelegate>,
+    model: Box<dyn DynamicGridView>,
     render_item: Box<dyn Fn(usize, &mut Window, &mut App) -> AnyElement>,
     interactivity: Interactivity,
 }
 
-pub trait GridDelegate {
+struct DynamicGridScrollState {
+    base_handle: ScrollHandle,
+    offset: Pixels,
+    viewport: Bounds<Pixels>,
+    content_size: Size<Pixels>,
+}
+
+impl DynamicGridScrollState {
+    fn clamp_on_known_bounds(&mut self) {
+        self.clamp_on_bounds(self.viewport, self.content_size);
+    }
+
+    /// Update the scroll if we're out of bounds.
+    fn clamp_on_bounds(&mut self, bounds: Bounds<Pixels>, content_size: Size<Pixels>) {
+        let viewport_size = bounds.size;
+        let min_scroll = (content_size - viewport_size).height;
+        self.offset = self.offset.max(-min_scroll).min(Pixels::ZERO);
+    }
+}
+
+#[derive(Clone)]
+pub struct DynamicGridScrollHandle(Rc<RefCell<DynamicGridScrollState>>);
+
+impl DynamicGridScrollHandle {
+    pub fn new() -> Self {
+        Self(Rc::new(RefCell::new(DynamicGridScrollState {
+            base_handle: ScrollHandle::new(),
+            content_size: size(Pixels::ZERO, Pixels::ZERO),
+            offset: Pixels::ZERO,
+            viewport: Bounds::default(),
+        })))
+    }
+}
+
+pub trait DynamicGridView {
     fn len(&self) -> usize;
+
+    fn scroll_handle(&self) -> DynamicGridScrollHandle;
 }
 
 impl DynamicGrid {
     pub fn new(
-        delegate: impl 'static + GridDelegate,
+        view: impl 'static + DynamicGridView,
         render_item: impl 'static + Fn(usize, &mut Window, &mut App) -> AnyElement,
     ) -> DynamicGrid {
-        DynamicGrid {
-            delegate: Box::new(delegate),
+        let mut grid = DynamicGrid {
+            model: Box::new(view),
             render_item: Box::new(render_item),
-            interactivity: Interactivity::default(),
-        }
+            interactivity: Interactivity::new(),
+        };
+
+        let scroll_handle = grid.model.scroll_handle().clone();
+
+        grid.interactivity.on_scroll_wheel(move |e, window, _| {
+            let mut state = scroll_handle.0.borrow_mut();
+
+            let delta = e.delta.pixel_delta(Pixels::from(12.0));
+
+            let max_scroll = state.content_size.height - state.viewport.size.height;
+            let add = state.offset + delta.y;
+            println!(
+                "{} + {} = {} (min = {}, max = {}). difference is = {}",
+                state.offset, delta.y, add, -max_scroll, 0, max_scroll
+            );
+            state.offset = (state.offset + delta.y);
+            state.clamp_on_known_bounds();
+            println!("set offset to {:?} ( + {:?}", state.offset, delta.y);
+            window.refresh();
+        });
+        grid
     }
 
     fn measure_item_size(&self, window: &mut Window, cx: &mut App) -> Size<Pixels> {
-        let count = self.delegate.len();
+        let count = self.model.len();
 
         if count == 0 {
             return Size::default();
@@ -51,6 +110,12 @@ impl IntoElement for DynamicGrid {
     }
 }
 
+impl Styled for DynamicGrid {
+    fn style(&mut self) -> &mut StyleRefinement {
+        &mut self.interactivity.base_style
+    }
+}
+
 impl Element for DynamicGrid {
     type RequestLayoutState = DynamicGridFrameState;
     type PrepaintState = Option<Hitbox>;
@@ -62,14 +127,15 @@ impl Element for DynamicGrid {
         window: &mut Window,
         cx: &mut App,
     ) -> (LayoutId, Self::RequestLayoutState) {
-        let items = self.delegate.len();
+        let items = self.model.len();
         let item_size = self.measure_item_size(window, cx);
         let layout_id = self.interactivity.request_layout(
             global_id,
             inspector_id,
             window,
             cx,
-            |style, window, cx| {
+            |mut style, window, cx| {
+                style.overflow.y = Overflow::Hidden;
                 window.request_measured_layout(
                     style,
                     move |known_dimensions, available_space, _window, _cx| {
@@ -103,14 +169,17 @@ impl Element for DynamicGrid {
                             }
                         };
 
-                        // Compute desired height, if constrained, then clamp (it's alright
-                        // vertically)
-                        let desired_height = match available_space.height {
-                            AvailableSpace::Definite(h) => (item_size.height * rows).min(h),
-                            AvailableSpace::MinContent | AvailableSpace::MaxContent => {
-                                item_size.height * rows
-                            }
-                        };
+                        // Compute desired height
+                        let desired_height =
+                            known_dimensions
+                                .height
+                                .unwrap_or(match available_space.height {
+                                    AvailableSpace::Definite(h) => (item_size.height * rows).max(h),
+                                    AvailableSpace::MinContent | AvailableSpace::MaxContent => {
+                                        item_size.height * rows
+                                    }
+                                });
+
                         size(desired_width, desired_height)
                     },
                 )
@@ -137,7 +206,7 @@ impl Element for DynamicGrid {
         window: &mut Window,
         cx: &mut App,
     ) -> Self::PrepaintState {
-        let n = self.delegate.len() as u32;
+        let n = self.model.len() as u32;
         let item_size = self.measure_item_size(window, cx);
 
         let cols = if item_size.width.is_zero() {
@@ -152,6 +221,16 @@ impl Element for DynamicGrid {
             (rows as usize) * item_size.height,
         );
 
+        let scroll_handle = self.model.scroll_handle();
+        let mut scroll_handle = scroll_handle.0.borrow_mut();
+
+        // Ensure that the scroll is valid when resized
+        scroll_handle.content_size = content_size;
+        scroll_handle.viewport = bounds;
+        scroll_handle.clamp_on_known_bounds();
+
+        let scroll_offset = scroll_handle.offset;
+
         // TODO: we don't care for now!
         self.interactivity.prepaint(
             id,
@@ -161,23 +240,29 @@ impl Element for DynamicGrid {
             window,
             cx,
             |_style, _, hitbox, window, cx| {
-                if self.delegate.len() > 0 {
-                    let mut items: Vec<AnyElement> = (0..self.delegate.len())
-                        .map(|x| (self.render_item)(x, window, cx))
-                        .collect();
-                    for (i, item) in items.iter_mut().enumerate() {
-                        let available_space = size(
-                            AvailableSpace::Definite(item_size.width),
-                            AvailableSpace::Definite(item_size.height),
-                        );
-                        item.layout_as_root(available_space, window, cx);
-                        let row_index = i / (cols as usize);
-                        let col_index = i % (cols as usize);
-                        let x = item_size.width * col_index;
-                        let y = item_size.height * row_index;
-                        item.prepaint_at(point(x, y), window, cx);
-                    }
-                    request_layout.items = items;
+                if self.model.len() > 0 {
+                    // Set a content mask to avoid setting click handlers where they should not be
+                    let content_mask = ContentMask { bounds };
+
+                    window.with_content_mask(Some(content_mask), |window| {
+                        let mut items: Vec<AnyElement> = (0..self.model.len())
+                            .map(|x| (self.render_item)(x, window, cx))
+                            .collect();
+
+                        for (i, item) in items.iter_mut().enumerate() {
+                            let available_space = size(
+                                AvailableSpace::Definite(item_size.width),
+                                AvailableSpace::Definite(item_size.height),
+                            );
+                            item.layout_as_root(available_space, window, cx);
+                            let row_index = i / (cols as usize);
+                            let col_index = i % (cols as usize);
+                            let x = bounds.origin.x + item_size.width * col_index;
+                            let y = bounds.origin.y + item_size.height * row_index + scroll_offset;
+                            item.prepaint_at(point(x, y), window, cx);
+                        }
+                        request_layout.items = items;
+                    })
                 }
                 hitbox
             },

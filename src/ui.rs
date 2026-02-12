@@ -1,12 +1,13 @@
 use std::collections::{HashMap, HashSet};
 
 use gpui::{
-    div, App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Window,
+    div, rgb, App, AppContext, Context, Div, Entity, InteractiveElement, IntoElement,
+    ParentElement, Render, Stateful, StatefulInteractiveElement, Styled, Window,
 };
 
 use crate::{
     provider::{Emoji, EmojiCategory, EmojiProvider},
-    ui::grid::{DynamicGrid, GridDelegate},
+    ui::grid::{DynamicGrid, DynamicGridScrollHandle, DynamicGridView},
 };
 mod dwm;
 mod grid;
@@ -72,8 +73,8 @@ impl EmojiListDelegate {
 // }
 
 pub struct MainWindow {
-    // provider: Entity<EmojiProvider>,
-    // emoji_list: Entity<ListState<EmojiListDelegate>>,
+    grid_state: DummyDelegate, // provider: Entity<EmojiProvider>,
+                               // emoji_list: Entity<ListState<EmojiListDelegate>>,
 }
 
 impl MainWindow {
@@ -85,36 +86,79 @@ impl MainWindow {
         // let provider = cx.new(move |_| provider);
         // let emoji_list = cx.new(|cx| ListState::new(EmojiListDelegate::new(&provider), window, cx));
         MainWindow {
-            // provider,
-            // emoji_list,
+            grid_state: DummyDelegate {
+                scroll_handle: DynamicGridScrollHandle::new(),
+            }, // grid, // provider,
+               // emoji_list,
         }
     }
 
     pub fn enable_acrylic_effect(&self, window: &mut Window, cx: &mut Context<Self>) {
-        dwm::apply_acrilic(window, cx);
+        let _ = dwm::apply_acrilic(window, cx)
+            .inspect_err(|e| println!("Failed to set Acrylic effect: {e}"));
     }
 }
 
-struct DummyDelegate {}
+#[derive(Clone)]
+struct DummyDelegate {
+    scroll_handle: grid::DynamicGridScrollHandle,
+}
 
-impl GridDelegate for DummyDelegate {
+impl DynamicGridView for DummyDelegate {
     fn len(&self) -> usize {
-        92
+        92 * 100
+    }
+
+    fn scroll_handle(&self) -> grid::DynamicGridScrollHandle {
+        self.scroll_handle.clone()
     }
 }
 
 impl Render for MainWindow {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let grid = DynamicGrid::new(DummyDelegate {}, |i, w, cx| {
+        let grid = DynamicGrid::new(self.grid_state.clone(), |i, w, cx| {
+            let i = i % 92;
             if i == 0 {
                 return div().child("merde").into_any_element();
             }
             div()
+                .id(format!("{:?}", i))
                 .child(format!("{}", char::from_u32((i + 33) as u32).unwrap()))
+                .on_click(move |e, w, a| println!("Pressed on {}", i))
                 .into_any_element()
         });
-        // div().child(grid)
-        div().child("Hello world!")
+
+        div().flex().flex_col().size_full().child(grid)
+        // div()
+        //     .flex()
+        //     .flex_col()
+        //     .flex_grow()
+        //     .w_full()
+        //     .gap_2()
+        //     .border_color(rgb(0xff0000))
+        //     .border_2()
+        //     .child(
+        //         div()
+        //             .flex()
+        //             .flex_row()
+        //             .flex_grow()
+        //             .w_full()
+        //             .gap_2()
+        //             .items_stretch()
+        //             .border_color(rgb(0xff0000))
+        //             .border_2()
+        //             .child(div().flex_grow().child("oops\ncaca"))
+        //             .child(div().flex_grow().child(grid)),
+        //     )
+        //     .child(
+        //         div()
+        //             .flex()
+        //             .flex_row()
+        //             .w_full()
+        //             .gap_2()
+        //             .child(div().flex_grow().child("mdr"))
+        //             .child(div().flex_grow().child("oops")),
+        //     )
         // div()
         //     .v_flex()
         //     .gap_2()
