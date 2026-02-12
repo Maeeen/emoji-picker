@@ -117,18 +117,23 @@ impl DynamicGridView for DummyDelegate {
 impl Render for MainWindow {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let grid = DynamicGrid::new(self.grid_state.clone(), |i, w, cx| {
+            let ip = i;
             let i = i % 92;
             if i == 0 {
                 return div().child("merde").into_any_element();
             }
             div()
-                .id(format!("{:?}", i))
+                .id(format!("{:?}", ip))
                 .child(format!("{}", char::from_u32((i + 33) as u32).unwrap()))
-                .on_click(move |e, w, a| println!("Pressed on {}", i))
+                .on_click(move |e, w, a| println!("Pressed on {}", ip))
                 .into_any_element()
         });
 
-        div().flex().flex_col().size_full().child(grid)
+        div()
+            .flex()
+            .flex_col()
+            .size_full()
+            .child(grid.border_2().border_color(rgb(0xffff00)))
         // div()
         //     .flex()
         //     .flex_col()

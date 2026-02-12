@@ -242,27 +242,38 @@ impl Element for DynamicGrid {
             |_style, _, hitbox, window, cx| {
                 if self.model.len() > 0 {
                     // Set a content mask to avoid setting click handlers where they should not be
-                    let content_mask = ContentMask { bounds };
+                    // let content_mask = ContentMask { bounds };
+                    //
+                    // window.with_content_mask(Some(content_mask), |window| {
+                    let top_row_index = (-scroll_offset / item_size.height) as u32;
+                    // Substracting to show mid-visible elements
+                    let first_visible_element_idx = top_row_index.saturating_sub(1u32) * cols;
+                    let nb_visible_rows = (bounds.size.height / item_size.height) as u32 + 2;
+                    let last_visible_element_idx = (first_visible_element_idx
+                        + nb_visible_rows * cols)
+                        .min(self.model.len() as u32);
 
-                    window.with_content_mask(Some(content_mask), |window| {
-                        let mut items: Vec<AnyElement> = (0..self.model.len())
-                            .map(|x| (self.render_item)(x, window, cx))
-                            .collect();
+                    let items_iterator = first_visible_element_idx..last_visible_element_idx;
 
-                        for (i, item) in items.iter_mut().enumerate() {
-                            let available_space = size(
-                                AvailableSpace::Definite(item_size.width),
-                                AvailableSpace::Definite(item_size.height),
-                            );
-                            item.layout_as_root(available_space, window, cx);
-                            let row_index = i / (cols as usize);
-                            let col_index = i % (cols as usize);
-                            let x = bounds.origin.x + item_size.width * col_index;
-                            let y = bounds.origin.y + item_size.height * row_index + scroll_offset;
-                            item.prepaint_at(point(x, y), window, cx);
-                        }
-                        request_layout.items = items;
-                    })
+                    let mut items: Vec<AnyElement> = items_iterator
+                        .map(|x| (self.render_item)(x as usize, window, cx))
+                        .collect();
+
+                    for (i, item) in items.iter_mut().enumerate() {
+                        let i = i + (first_visible_element_idx as usize);
+                        let available_space = size(
+                            AvailableSpace::Definite(item_size.width),
+                            AvailableSpace::Definite(item_size.height),
+                        );
+                        item.layout_as_root(available_space, window, cx);
+                        let row_index = i / (cols as usize);
+                        let col_index = i % (cols as usize);
+                        let x = bounds.origin.x + item_size.width * col_index;
+                        let y = bounds.origin.y + item_size.height * row_index + scroll_offset;
+                        item.prepaint_at(point(x, y), window, cx);
+                    }
+                    request_layout.items = items;
+                    // })
                 }
                 hitbox
             },
