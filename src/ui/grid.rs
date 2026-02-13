@@ -1,8 +1,9 @@
 use gpui::{
     div, fill, point, px, relative, rgb, size, solid_background, AnyElement, App, AvailableSpace,
-    Background, BorderStyle, Bounds, ContentMask, Corners, DispatchPhase, Element, GlobalElementId,
-    Hitbox, HitboxBehavior, Hsla, InspectorElementId, Interactivity, IntoElement, IsZero, LayoutId,
-    MouseDownEvent, Pixels, Position, Render, Rgba, Size, Style, Styled, Window,
+    Background, BorderStyle, Bounds, ContentMask, Corners, DispatchPhase, Edges, Element,
+    GlobalElementId, Hitbox, HitboxBehavior, Hsla, InspectorElementId, Interactivity, IntoElement,
+    IsZero, LayoutId, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Position,
+    Render, Rgba, Size, Style, Styled, Window,
 };
 use gpui::{Overflow, StyleRefinement};
 use std::{cell::RefCell, rc::Rc};
@@ -15,10 +16,13 @@ pub struct DynamicGrid {
     interactivity: Interactivity,
 }
 
+#[derive(Default)]
 struct DynamicGridScrollState {
     offset: Pixels,
     viewport: Bounds<Pixels>,
     content_size: Size<Pixels>,
+    // For the scroll bar
+    drag_start: Option<(Pixels, Point<Pixels>)>,
 }
 
 impl DynamicGridScrollState {
@@ -34,18 +38,8 @@ impl DynamicGridScrollState {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct DynamicGridScrollHandle(Rc<RefCell<DynamicGridScrollState>>);
-
-impl DynamicGridScrollHandle {
-    pub fn new() -> Self {
-        Self(Rc::new(RefCell::new(DynamicGridScrollState {
-            content_size: size(Pixels::ZERO, Pixels::ZERO),
-            offset: Pixels::ZERO,
-            viewport: Bounds::default(),
-        })))
-    }
-}
 
 pub trait DynamicGridView {
     fn len(&self) -> usize;
@@ -134,19 +128,17 @@ impl Element for DynamicGrid {
                     style,
                     move |known_dimensions, available_space, _window, _cx| {
                         // Infer the available width
-                        let max_width = known_dimensions.width.unwrap_or_else(|| {
-                            match available_space.width {
+                        let width = known_dimensions
+                            .width
+                            .unwrap_or_else(|| match available_space.width {
                                 AvailableSpace::Definite(p) => p,
-                                AvailableSpace::MinContent | AvailableSpace::MaxContent => {
-                                    // no horizontal constraint
-                                    item_size.width * items as f32
-                                }
-                            }
-                        });
+                                AvailableSpace::MinContent => item_size.width,
+                                AvailableSpace::MaxContent => item_size.width * items as f32,
+                            });
 
                         // Infer number of columns, do not divide by zero.
                         let cols = if item_size.width > Pixels::ZERO {
-                            (max_width / item_size.width).floor().max(1.0) as usize
+                            (width / item_size.width).floor().max(1.0) as usize
                         } else {
                             1
                         };
@@ -155,26 +147,17 @@ impl Element for DynamicGrid {
                         // Round up the number of rows
                         let rows = items.div_ceil(cols);
 
-                        let desired_width = match available_space.width {
-                            // We have already taken the constraint on the width
-                            AvailableSpace::Definite(_) => max_width,
-                            AvailableSpace::MinContent | AvailableSpace::MaxContent => {
-                                item_size.width * cols
-                            }
-                        };
-
                         // Compute desired height
                         let desired_height =
                             known_dimensions
                                 .height
                                 .unwrap_or(match available_space.height {
-                                    AvailableSpace::Definite(h) => (item_size.height * rows).max(h),
-                                    AvailableSpace::MinContent | AvailableSpace::MaxContent => {
-                                        item_size.height * rows
-                                    }
+                                    AvailableSpace::Definite(h) => h.min(item_size.height * rows),
+                                    AvailableSpace::MinContent => item_size.height,
+                                    AvailableSpace::MaxContent => item_size.height * rows,
                                 });
 
-                        size(desired_width, desired_height)
+                        size(width, desired_height)
                     },
                 )
             },
@@ -284,19 +267,22 @@ impl Element for DynamicGrid {
         cx: &mut App,
     ) {
         let hitbox = prepaint;
-        self.interactivity.paint(
-            id,
-            inspector_id,
-            bounds,
-            hitbox.as_ref(),
-            window,
-            cx,
-            |_, window, cx| {
-                for item in request_layout.items.iter_mut() {
-                    item.paint(window, cx)
-                }
-            },
-        )
+
+        window.with_content_mask(Some(ContentMask { bounds }), |window| {
+            self.interactivity.paint(
+                id,
+                inspector_id,
+                bounds,
+                hitbox.as_ref(),
+                window,
+                cx,
+                |_, window, cx| {
+                    for item in request_layout.items.iter_mut() {
+                        item.paint(window, cx)
+                    }
+                },
+            )
+        })
     }
 }
 
@@ -348,7 +334,7 @@ impl Element for GridScrollbar {
             position: Position::Absolute,
             flex_grow: 1.0,
             flex_shrink: 1.0,
-            size: size(relative(1.).into(), relative(1.0).into()),
+            size: size(relative(1.).into(), relative(1.).into()),
             ..Style::default()
         };
 
@@ -375,10 +361,10 @@ impl Element for GridScrollbar {
         let scroll_ratio = (-scroll_handle.offset) / (cs.height - vp.height);
 
         let sb_width: Pixels = px(8.);
-        let sb_height: Pixels = px(vp.height.pow(2.) / cs.height);
+        let sb_height: Pixels = px(vp.height.pow(2.) / cs.height).max(px(12.));
 
-        let x = bounds.size.width - sb_width;
-        let y = scroll_ratio * (bounds.size.height - sb_height);
+        let x = bounds.size.width - sb_width + bounds.origin.x;
+        let y = scroll_ratio * (bounds.size.height - sb_height) + bounds.origin.y;
 
         let bar_hitbox = window.with_content_mask(Some(ContentMask { bounds }), |window| {
             window.insert_hitbox(
@@ -400,7 +386,7 @@ impl Element for GridScrollbar {
         _: &mut Self::RequestLayoutState,
         prepaint: &mut Self::PrepaintState,
         window: &mut Window,
-        _: &mut App,
+        cx: &mut App,
     ) {
         if let Some(hitbox) = prepaint.hitbox.as_ref() {
             let thumb_bounds = hitbox.bounds;
@@ -425,6 +411,7 @@ impl Element for GridScrollbar {
 
             window.on_mouse_event::<MouseDownEvent>({
                 let scroll_handle = self.scroll_handle.clone();
+
                 move |event, phase, window, cx| {
                     if phase.bubble() && sb_bounds.contains(&event.position) {
                         cx.stop_propagation();
@@ -441,11 +428,44 @@ impl Element for GridScrollbar {
                             scroll_handle.clamp_on_known_bounds();
                             window.refresh();
                         } else {
-                            // need to do something annoying…
+                            let pos = event.position;
+                            let mut handle = scroll_handle.0.borrow_mut();
+                            handle.drag_start = Some((handle.offset, pos));
                         }
                     }
                 }
             });
+
+            window.on_mouse_event::<MouseMoveEvent>({
+                let scroll_handle = self.scroll_handle.clone();
+
+                move |event, phase, window, cx| {
+                    let mut state = scroll_handle.0.borrow_mut();
+
+                    // Dragging?
+                    if let Some((initial_offset, drag_start)) = state.drag_start {
+                        if phase.bubble() {
+                            let delta_y = event.position.y - drag_start.y;
+
+                            let scroll_ratio =
+                                state.content_size.height / state.viewport.size.height;
+
+                            state.offset = initial_offset - (delta_y * scroll_ratio);
+                            state.clamp_on_known_bounds();
+                            window.refresh();
+                        }
+                    }
+                }
+            });
+
+            window.on_mouse_event::<MouseUpEvent>({
+                let scroll_handle = self.scroll_handle.clone();
+
+                move |_, _, _, _| {
+                    let mut state = scroll_handle.0.borrow_mut();
+                    state.drag_start = None;
+                }
+            })
         }
     }
 }

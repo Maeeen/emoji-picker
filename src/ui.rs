@@ -87,7 +87,7 @@ impl MainWindow {
         // let emoji_list = cx.new(|cx| ListState::new(EmojiListDelegate::new(&provider), window, cx));
         MainWindow {
             grid_state: DummyDelegate {
-                scroll_handle: DynamicGridScrollHandle::new(),
+                scroll_handle: DynamicGridScrollHandle::default(),
             }, // grid, // provider,
                // emoji_list,
         }
@@ -133,7 +133,17 @@ impl Render for MainWindow {
             .flex()
             .flex_col()
             .size_full()
-            .child(grid.border_2().border_color(rgb(0xffff00)))
-            .child(GridScrollbar::new(self.grid_state.clone()))
+            .relative()
+            .child(div().child("text"))
+            .child(
+                div()
+                    .border_2()
+                    .border_color(rgb(0xff0000))
+                    .size_full()
+                    .relative()
+                    .child(GridScrollbar::new(self.grid_state.clone()))
+                    .child(grid.border_2().border_color(rgb(0xffff00)).size_full()),
+            )
+            .child(div().child("text"))
     }
 }
