@@ -1,18 +1,19 @@
 use gpui::{
-    div, fill, point, px, relative, rgb, size, solid_background, AnyElement, App, AvailableSpace,
-    Background, BorderStyle, Bounds, ContentMask, Corners, DispatchPhase, Edges, Element,
-    GlobalElementId, Hitbox, HitboxBehavior, Hsla, InspectorElementId, Interactivity, IntoElement,
-    IsZero, LayoutId, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Position,
-    Render, Rgba, Size, Style, Styled, Window,
+    point, px, relative, size, solid_background, AnyElement, App, AvailableSpace, BorderStyle,
+    Bounds, ContentMask, Corners, Element, GlobalElementId, Hitbox, HitboxBehavior, Hsla,
+    InspectorElementId, Interactivity, IntoElement, IsZero, LayoutId, MouseDownEvent,
+    MouseMoveEvent, MouseUpEvent, Pixels, Point, Position, Rgba, Size, Style, Styled, Window,
 };
 use gpui::{Overflow, StyleRefinement};
 use std::{cell::RefCell, rc::Rc};
 
-type ItemRender = dyn Fn(usize, &mut Window, &mut App) -> AnyElement;
+type ItemRender = dyn Fn(usize, usize, &mut Window, &mut App) -> AnyElement;
+type DecorationRender = dyn Fn(usize, &mut Window, &mut App) -> AnyElement;
 
 pub struct DynamicGrid {
     model: Box<dyn DynamicGridView>,
     render_item: Box<ItemRender>,
+    render_decoration: Option<Box<dyn Fn(usize, &mut Window, &mut App) -> AnyElement>>,
     interactivity: Interactivity,
 }
 
@@ -42,7 +43,9 @@ impl DynamicGridScrollState {
 pub struct DynamicGridScrollHandle(Rc<RefCell<DynamicGridScrollState>>);
 
 pub trait DynamicGridView {
-    fn len(&self) -> usize;
+    fn len(&self, section: usize) -> usize;
+
+    fn number_sections(&self) -> usize;
 
     fn scroll_handle(&self) -> DynamicGridScrollHandle;
 }
@@ -50,11 +53,16 @@ pub trait DynamicGridView {
 impl DynamicGrid {
     pub fn new(
         view: impl 'static + DynamicGridView,
-        render_item: impl 'static + Fn(usize, &mut Window, &mut App) -> AnyElement,
+        render_item: impl 'static + Fn(usize, usize, &mut Window, &mut App) -> AnyElement,
+        render_decoration: Option<impl 'static + Fn(usize, &mut Window, &mut App) -> AnyElement>,
     ) -> DynamicGrid {
         let mut grid = DynamicGrid {
             model: Box::new(view),
             render_item: Box::new(render_item),
+            render_decoration: render_decoration.map(|f| {
+                let boxed: Box<DecorationRender> = Box::new(f);
+                boxed
+            }) ,
             interactivity: Interactivity::new(),
         };
 
@@ -73,15 +81,24 @@ impl DynamicGrid {
     }
 
     fn measure_item_size(&self, window: &mut Window, cx: &mut App) -> Size<Pixels> {
-        let count = self.model.len();
-
+        let count = self.model.len(0);
         if count == 0 {
-            return Size::default();
+            return Size::default()
         }
 
-        let mut item = (self.render_item)(0, window, cx);
+        let mut item = (self.render_item)(0, 0, window, cx);
         let available_space = size(AvailableSpace::MinContent, AvailableSpace::MinContent);
         item.layout_as_root(available_space, window, cx)
+    }
+
+    fn measure_decoration_height(&self, window: &mut Window, cx: &mut App) -> Size<Pixels> {
+        if self.model.number_sections() == 0 || self.model.len(0) == 0 {
+            return Size::default()
+        }
+
+        if let Some(r) = self.render_item
+
+        let mut item = (self.rende)(0, 0, window, cx);
     }
 }
 
@@ -115,7 +132,6 @@ impl Element for DynamicGrid {
         window: &mut Window,
         cx: &mut App,
     ) -> (LayoutId, Self::RequestLayoutState) {
-        let items = self.model.len();
         let item_size = self.measure_item_size(window, cx);
         let layout_id = self.interactivity.request_layout(
             global_id,
@@ -198,6 +214,9 @@ impl Element for DynamicGrid {
             (rows as usize) * item_size.height,
         );
 
+        // Now center the content
+        let margin_x = (bounds.size.width - content_size.width) / 2.;
+
         let scroll_handle = self.model.scroll_handle();
         let mut scroll_handle = scroll_handle.0.borrow_mut();
 
@@ -244,7 +263,7 @@ impl Element for DynamicGrid {
                             item.layout_as_root(available_space, window, cx);
                             let row_index = i / (cols as usize);
                             let col_index = i % (cols as usize);
-                            let x = bounds.origin.x + item_size.width * col_index;
+                            let x = margin_x + bounds.origin.x + item_size.width * col_index;
                             let y = bounds.origin.y + item_size.height * row_index + scroll_offset;
                             item.prepaint_at(point(x, y), window, cx);
                         }
@@ -397,7 +416,7 @@ impl Element for GridScrollbar {
 
             window.paint_quad(gpui::PaintQuad {
                 bounds: thumb_bounds.inset(px(1.)),
-                corner_radii: Corners::all(px(2.)),
+                corner_radii: Corners::all(px(4.)),
                 background: solid_background(Hsla::from(Rgba {
                     r: 255.,
                     g: 255.,

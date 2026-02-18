@@ -105,29 +105,43 @@ struct DummyDelegate {
 }
 
 impl DynamicGridView for DummyDelegate {
-    fn len(&self) -> usize {
-        92 * 100
+    fn len(&self, section: usize) -> usize {
+        92 * section
     }
 
     fn scroll_handle(&self) -> grid::DynamicGridScrollHandle {
         self.scroll_handle.clone()
     }
+
+    fn number_sections(&self) -> usize {
+        10
+    }
 }
 
 impl Render for MainWindow {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let grid = DynamicGrid::new(self.grid_state.clone(), |i, w, cx| {
-            let ip = i;
-            let i = i % 92;
-            if i == 0 {
-                return div().child("merde").into_any_element();
-            }
-            div()
-                .id(format!("{:?}", ip))
-                .child(format!("{}", char::from_u32((i + 33) as u32).unwrap()))
-                .on_click(move |e, w, a| println!("Pressed on {}", ip))
-                .into_any_element()
-        });
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let grid = DynamicGrid::new(
+            self.grid_state.clone(),
+            |i, _s, _w, _cx| {
+                let ip = i;
+                let i = i % 92;
+                if i == 0 {
+                    return div().child("merde").into_any_element();
+                }
+                div()
+                    .id(format!("{:?}", ip))
+                    .child(format!("{}", char::from_u32((i + 33) as u32).unwrap()))
+                    .on_click(move |e, w, a| println!("Pressed on {}", ip))
+                    .into_any_element()
+            },
+            {
+                Some(|s, _w: &mut Window, _cx: &mut App| {
+                    div()
+                        .child(format!("Section #{}", s + 33))
+                        .into_any_element()
+                })
+            },
+        );
 
         div()
             .flex()

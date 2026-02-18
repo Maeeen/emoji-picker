@@ -1,7 +1,5 @@
 use gpui::{Context, Render, Window};
-use raw_window_handle::{
-    HandleError, HasWindowHandle, RawWindowHandle, Win32WindowHandle, WindowHandle,
-};
+use raw_window_handle::{HandleError, HasWindowHandle, RawWindowHandle, WindowHandle};
 use thiserror::Error;
 use windows_sys::{
     Wdk::System::SystemServices::RtlGetVersion,
