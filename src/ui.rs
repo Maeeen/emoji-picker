@@ -106,7 +106,8 @@ struct DummyDelegate {
 
 impl DynamicGridView for DummyDelegate {
     fn len(&self, section: usize) -> usize {
-        92 * section
+        // TODO: panic/handle the case where the length of a section is zero
+        92 * (100 + 1)
     }
 
     fn scroll_handle(&self) -> grid::DynamicGridScrollHandle {
@@ -114,7 +115,7 @@ impl DynamicGridView for DummyDelegate {
     }
 
     fn number_sections(&self) -> usize {
-        10
+        2
     }
 }
 
@@ -129,9 +130,17 @@ impl Render for MainWindow {
                     return div().child("merde").into_any_element();
                 }
                 div()
-                    .id(format!("{:?}", ip))
+                    .id(format!("{:?}-{:?}", _s, ip))
                     .child(format!("{}", char::from_u32((i + 33) as u32).unwrap()))
-                    .on_click(move |e, w, a| println!("Pressed on {}", ip))
+                    .on_click(move |e, w, a| {
+                        println!(
+                            "Pressed on {} which is char {} section {_s:?} ({}/{})",
+                            ip,
+                            char::from_u32((i + 33) as u32).unwrap(),
+                            ip,
+                            92 * (_s + 1)
+                        )
+                    })
                     .into_any_element()
             },
             {

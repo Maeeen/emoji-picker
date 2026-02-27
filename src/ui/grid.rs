@@ -62,7 +62,7 @@ impl DynamicGrid {
             render_decoration: render_decoration.map(|f| {
                 let boxed: Box<DecorationRender> = Box::new(f);
                 boxed
-            }) ,
+            }),
             interactivity: Interactivity::new(),
         };
 
@@ -83,7 +83,7 @@ impl DynamicGrid {
     fn measure_item_size(&self, window: &mut Window, cx: &mut App) -> Size<Pixels> {
         let count = self.model.len(0);
         if count == 0 {
-            return Size::default()
+            return Size::default();
         }
 
         let mut item = (self.render_item)(0, 0, window, cx);
@@ -91,14 +91,18 @@ impl DynamicGrid {
         item.layout_as_root(available_space, window, cx)
     }
 
-    fn measure_decoration_height(&self, window: &mut Window, cx: &mut App) -> Size<Pixels> {
+    fn measure_decoration_height(&self, window: &mut Window, cx: &mut App) -> Pixels {
         if self.model.number_sections() == 0 || self.model.len(0) == 0 {
-            return Size::default()
+            return px(0.);
         }
 
-        if let Some(r) = self.render_item
-
-        let mut item = (self.rende)(0, 0, window, cx);
+        if let Some(r) = self.render_decoration.as_ref() {
+            let mut item = (r)(0, window, cx);
+            let available_space = size(AvailableSpace::MinContent, AvailableSpace::MinContent);
+            item.layout_as_root(available_space, window, cx).height
+        } else {
+            px(0.)
+        }
     }
 }
 
@@ -132,7 +136,17 @@ impl Element for DynamicGrid {
         window: &mut Window,
         cx: &mut App,
     ) -> (LayoutId, Self::RequestLayoutState) {
+        let nb_items_per_section = {
+            let mut x = vec![];
+            for s in 0..self.model.number_sections() {
+                x.push(self.model.len(s))
+            }
+            x
+        };
+
         let item_size = self.measure_item_size(window, cx);
+        let decoration_height = self.measure_decoration_height(window, cx);
+
         let layout_id = self.interactivity.request_layout(
             global_id,
             inspector_id,
@@ -143,13 +157,18 @@ impl Element for DynamicGrid {
                 window.request_measured_layout(
                     style,
                     move |known_dimensions, available_space, _window, _cx| {
+                        let max_items_in_section =
+                            { *nb_items_per_section.iter().max().unwrap_or(&0) };
+
                         // Infer the available width
                         let width = known_dimensions
                             .width
                             .unwrap_or_else(|| match available_space.width {
                                 AvailableSpace::Definite(p) => p,
                                 AvailableSpace::MinContent => item_size.width,
-                                AvailableSpace::MaxContent => item_size.width * items as f32,
+                                AvailableSpace::MaxContent => {
+                                    item_size.width * max_items_in_section as f32
+                                }
                             });
 
                         // Infer number of columns, do not divide by zero.
@@ -159,21 +178,31 @@ impl Element for DynamicGrid {
                             1
                         };
 
-                        // Infer number of rows
-                        // Round up the number of rows
-                        let rows = items.div_ceil(cols);
-
                         // Compute desired height
-                        let desired_height =
+                        let desired_height = {
+                            let mut x = px(0.);
+                            for items in nb_items_per_section.iter() {
+                                let rows = items.div_ceil(cols);
+                                x += item_size.height * rows
+                            }
+                            x += decoration_height * nb_items_per_section.len();
+                            x
+                        };
+                        // let desired_height = px(0.);
+
+                        // From desired height, infer actual wanted height
+                        let height =
                             known_dimensions
                                 .height
                                 .unwrap_or(match available_space.height {
-                                    AvailableSpace::Definite(h) => h.min(item_size.height * rows),
-                                    AvailableSpace::MinContent => item_size.height,
-                                    AvailableSpace::MaxContent => item_size.height * rows,
+                                    AvailableSpace::Definite(h) => h.min(desired_height),
+                                    AvailableSpace::MinContent => {
+                                        item_size.height + decoration_height
+                                    }
+                                    AvailableSpace::MaxContent => desired_height,
                                 });
 
-                        size(width, desired_height)
+                        size(width, height)
                     },
                 )
             },
@@ -199,20 +228,48 @@ impl Element for DynamicGrid {
         window: &mut Window,
         cx: &mut App,
     ) -> Self::PrepaintState {
-        let n = self.model.len() as u32;
+        let nb_items_per_section = {
+            let mut x = vec![];
+            for s in 0..self.model.number_sections() {
+                x.push(self.model.len(s))
+            }
+            x
+        };
+
         let item_size = self.measure_item_size(window, cx);
+        let decoration_height = self.measure_decoration_height(window, cx);
 
         let cols = if item_size.width.is_zero() {
             1
         } else {
             (bounds.size.width / item_size.width) as u32
         };
-        let rows = n.div_ceil(cols);
 
-        let content_size = size(
-            item_size.width * (cols as usize),
-            (rows as usize) * item_size.height,
-        );
+        let rows_per_section: Vec<usize> = nb_items_per_section
+            .iter()
+            .map(|n| (*n).div_ceil(cols as usize))
+            .collect();
+
+        let content_size = size(item_size.width * (cols as usize), {
+            rows_per_section
+                .iter()
+                .map(|x| (*x) * item_size.height)
+                .sum()
+        });
+
+        let height_per_section: Vec<Pixels> = rows_per_section
+            .iter()
+            .map(|l| (*l) * item_size.height + decoration_height)
+            .collect();
+
+        let y_offset_per_section: Vec<Pixels> = height_per_section
+            .iter()
+            .scan(px(0.), |state, &x| {
+                let old_state = *state;
+                *state += x;
+                Some(old_state)
+            })
+            .collect();
 
         // Now center the content
         let margin_x = (bounds.size.width - content_size.width) / 2.;
@@ -235,38 +292,101 @@ impl Element for DynamicGrid {
             window,
             cx,
             |_style, _, hitbox, window, cx| {
-                if self.model.len() > 0 {
+                if self.model.number_sections() > 0 {
                     // Set a content mask to avoid setting click handlers where they should not be
                     let content_mask = ContentMask { bounds };
 
                     window.with_content_mask(Some(content_mask), |window| {
-                        let top_row_index = (-scroll_offset / item_size.height) as u32;
-                        // Substracting to show mid-visible elements
-                        let first_visible_element_idx = top_row_index.saturating_sub(1u32) * cols;
-                        let nb_visible_rows = (bounds.size.height / item_size.height) as u32 + 2;
-                        let last_visible_element_idx = (first_visible_element_idx
-                            + nb_visible_rows * cols)
-                            .min(self.model.len() as u32);
+                        let min_visible_section = {
+                            y_offset_per_section
+                                .iter()
+                                .position(|x| *x > -scroll_offset)
+                                .unwrap_or(0)
+                                .saturating_sub(1)
+                        };
 
-                        let items_iterator = first_visible_element_idx..last_visible_element_idx;
+                        let max_visible_section = {
+                            let mut i = min_visible_section;
+                            for offset in y_offset_per_section.iter().skip(i) {
+                                // max_visible_section is excluded, this is why the i += 1 appears
+                                // before the break
+                                i += 1;
+                                if *offset > -scroll_offset + bounds.size.height {
+                                    break;
+                                }
+                            }
+                            i
+                        };
 
-                        let mut items: Vec<AnyElement> = items_iterator
-                            .map(|x| (self.render_item)(x as usize, window, cx))
-                            .collect();
+                        let mut items: Vec<AnyElement> = vec![];
 
-                        for (i, item) in items.iter_mut().enumerate() {
-                            let i = i + (first_visible_element_idx as usize);
-                            let available_space = size(
-                                AvailableSpace::Definite(item_size.width),
-                                AvailableSpace::Definite(item_size.height),
-                            );
-                            item.layout_as_root(available_space, window, cx);
-                            let row_index = i / (cols as usize);
-                            let col_index = i % (cols as usize);
-                            let x = margin_x + bounds.origin.x + item_size.width * col_index;
-                            let y = bounds.origin.y + item_size.height * row_index + scroll_offset;
-                            item.prepaint_at(point(x, y), window, cx);
+                        for section in min_visible_section..max_visible_section {
+                            let y_offset = y_offset_per_section[section];
+
+                            let should_draw_decoration = scroll_offset <= y_offset;
+
+                            // Decoration
+                            if should_draw_decoration {
+                                if let Some(render_decoration) = self.render_decoration.as_ref() {
+                                    let mut item = (render_decoration)(section, window, cx);
+
+                                    let available_space = size(
+                                        AvailableSpace::Definite(bounds.size.width),
+                                        AvailableSpace::Definite(decoration_height),
+                                    );
+                                    item.layout_as_root(available_space, window, cx);
+
+                                    let x = margin_x + bounds.origin.x;
+                                    let y = bounds.origin.y + scroll_offset + y_offset;
+                                    item.prepaint_at(point(x, y), window, cx);
+                                    items.push(item)
+                                };
+                            }
+
+                            let first_visible_row_idx =
+                                ((-scroll_offset - y_offset) / item_size.height) as u32;
+
+                            let first_visible_el_idx =
+                                first_visible_row_idx.saturating_sub(1u32) * cols;
+
+                            // When drawing a section, we just need to stop when we exit the view
+                            // OR drawing all elements.
+                            // The latter case takes already consideration of the case where we
+                            // should draw next visible sections or draw none.
+                            let nb_visible_rows = (bounds.size.height / item_size.height) as u32;
+
+                            let last_visible_el_idx = (first_visible_el_idx
+                                + nb_visible_rows * cols)
+                                .min(nb_items_per_section[section] as u32);
+
+                            let items_iterator = first_visible_el_idx..last_visible_el_idx;
+
+                            let section_items: Vec<AnyElement> = items_iterator
+                                .map(|x| (self.render_item)(x as usize, section, window, cx))
+                                .collect();
+
+                            // Actual items
+                            for (i, mut item) in section_items.into_iter().enumerate() {
+                                let i = i + (first_visible_el_idx as usize);
+                                let available_space = size(
+                                    AvailableSpace::Definite(item_size.width),
+                                    AvailableSpace::Definite(item_size.height),
+                                );
+                                item.layout_as_root(available_space, window, cx);
+                                let row_index = i / (cols as usize);
+                                let col_index = i % (cols as usize);
+                                let x = margin_x + bounds.origin.x + item_size.width * col_index;
+                                let y = bounds.origin.y
+                                    + item_size.height * row_index
+                                    + scroll_offset
+                                    + y_offset
+                                    + decoration_height;
+                                item.prepaint_at(point(x, y), window, cx);
+
+                                items.push(item)
+                            }
                         }
+
                         request_layout.items = items;
                     })
                 }
