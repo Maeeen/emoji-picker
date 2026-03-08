@@ -1,95 +1,65 @@
-use std::collections::{HashMap, HashSet};
-
 use gpui::{
-    div, rgb, App, AppContext, Context, Div, Entity, InteractiveElement, IntoElement,
-    ParentElement, Render, Stateful, StatefulInteractiveElement, Styled, Window,
+    div, rgb, App, AppContext, Context, Entity, InteractiveElement, IntoElement, ParentElement,
+    Render, StatefulInteractiveElement, Styled, Window,
 };
 
 use crate::{
-    provider::{Emoji, EmojiCategory, EmojiProvider},
+    provider::EmojiProvider,
     ui::grid::{DynamicGrid, DynamicGridScrollHandle, DynamicGridView, GridScrollbar},
 };
 mod dwm;
+mod emoji_button;
 mod grid;
 
-pub struct EmojiListDelegate {
+#[derive(Clone)]
+struct EmojiGridView {
     provider: Entity<EmojiProvider>,
+    scroll_handle: grid::DynamicGridScrollHandle,
 }
 
-impl EmojiListDelegate {
-    fn new(provider: &Entity<EmojiProvider>) -> EmojiListDelegate {
-        EmojiListDelegate {
-            provider: provider.clone(),
+impl EmojiGridView {
+    fn new(provider: Entity<EmojiProvider>) -> EmojiGridView {
+        EmojiGridView {
+            provider,
+            scroll_handle: Default::default(),
         }
     }
 }
 
-// impl ListDelegate for EmojiListDelegate {
-//     type Item = ListItem;
-//
-//     fn sections_count(&self, cx: &App) -> usize {
-//         self.provider.read(cx).categories.len()
-//     }
-//
-//     fn items_count(&self, section: usize, cx: &App) -> usize {
-//         let provider = self.provider.read(cx);
-//         let cat_name = provider.categories_order.get(section);
-//         let cat = cat_name.and_then(|x| provider.categories.get(x));
-//
-//         match cat {
-//             None => 0,
-//             Some(x) => x.len(),
-//         }
-//     }
-//
-//     fn render_section_header(
-//         &mut self,
-//         section: usize,
-//         _window: &mut Window,
-//         cx: &mut Context<ListState<Self>>,
-//     ) -> Option<impl IntoElement> {
-//         let title = self.provider.read(cx).categories_order.get(section)?;
-//
-//         Some(h_flex().px().py_1().gap_2().text_sm().child(title.clone()))
-//     }
-//
-//     fn render_item(
-//         &mut self,
-//         ix: IndexPath,
-//         window: &mut Window,
-//         cx: &mut Context<ListState<EmojiListDelegate>>,
-//     ) -> Option<ListItem> {
-//         Some(ListItem::new(ix).child(div().child(format!("{:?}", ix))))
-//     }
-//
-//     fn set_selected_index(
-//         &mut self,
-//         ix: Option<IndexPath>,
-//         window: &mut Window,
-//         cx: &mut Context<ListState<Self>>,
-//     ) {
-//         println!("Setting set_selected_index at {ix:?}")
-//     }
-// }
+impl DynamicGridView for EmojiGridView {
+    fn len(&self, section: usize, cx: &App) -> usize {
+        let provider = self.provider.read(cx);
+        let cat_name = provider.categories_order.get(section);
+        if let Some(cat_name) = cat_name {
+            provider.categories.get(cat_name).unwrap().len()
+        } else {
+            0
+        }
+    }
+
+    fn number_sections(&self, cx: &App) -> usize {
+        let provider = self.provider.read(cx);
+        provider.categories_order.len()
+    }
+
+    fn scroll_handle(&self) -> Option<DynamicGridScrollHandle> {
+        Some(self.scroll_handle.clone())
+    }
+}
 
 pub struct MainWindow {
-    grid_state: DummyDelegate, // provider: Entity<EmojiProvider>,
-                               // emoji_list: Entity<ListState<EmojiListDelegate>>,
+    provider: Entity<EmojiProvider>,
+    grid_view: EmojiGridView,
 }
 
 impl MainWindow {
-    pub fn new(
-        cx: &mut Context<Self>,
-        window: &mut Window,
-        // provider: EmojiProvider
-    ) -> MainWindow {
-        // let provider = cx.new(move |_| provider);
-        // let emoji_list = cx.new(|cx| ListState::new(EmojiListDelegate::new(&provider), window, cx));
+    pub fn new(cx: &mut Context<Self>, window: &mut Window, provider: EmojiProvider) -> MainWindow {
+        let provider = cx.new(move |_| provider);
+
+        let grid_view = EmojiGridView::new(provider.clone());
         MainWindow {
-            grid_state: DummyDelegate {
-                scroll_handle: DynamicGridScrollHandle::default(),
-            }, // grid, // provider,
-               // emoji_list,
+            provider,
+            grid_view,
         }
     }
 
@@ -99,55 +69,33 @@ impl MainWindow {
     }
 }
 
-#[derive(Clone)]
-struct DummyDelegate {
-    scroll_handle: grid::DynamicGridScrollHandle,
-}
-
-impl DynamicGridView for DummyDelegate {
-    fn len(&self, section: usize) -> usize {
-        // TODO: panic/handle the case where the length of a section is zero
-        92 * (100 + 1)
-    }
-
-    fn scroll_handle(&self) -> grid::DynamicGridScrollHandle {
-        self.scroll_handle.clone()
-    }
-
-    fn number_sections(&self) -> usize {
-        2
-    }
-}
-
 impl Render for MainWindow {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let grid = DynamicGrid::new(
-            self.grid_state.clone(),
-            |i, _s, _w, _cx| {
-                let ip = i;
-                let i = i % 92;
-                if i == 0 {
-                    return div().child("merde").into_any_element();
+            self.grid_view.clone(),
+            {
+                let provider = self.provider.clone();
+
+                move |i, s, _w, cx| {
+                    let provider = provider.read(cx);
+
+                    // TODO: add checks!
+                    let category = provider.get_category_from_index(s).unwrap();
+                    let emoji = category.get(i).unwrap();
+
+                    div()
+                        .id(format!("emoji-{:?}-{:?}", s, i))
+                        .child(format!("{:?}", emoji))
+                        .into_any_element()
                 }
-                div()
-                    .id(format!("{:?}-{:?}", _s, ip))
-                    .child(format!("{}", char::from_u32((i + 33) as u32).unwrap()))
-                    .on_click(move |e, w, a| {
-                        println!(
-                            "Pressed on {} which is char {} section {_s:?} ({}/{})",
-                            ip,
-                            char::from_u32((i + 33) as u32).unwrap(),
-                            ip,
-                            92 * (_s + 1)
-                        )
-                    })
-                    .into_any_element()
             },
             {
-                Some(|s, _w: &mut Window, _cx: &mut App| {
-                    div()
-                        .child(format!("Section #{}", s + 33))
-                        .into_any_element()
+                let provider = self.provider.clone();
+
+                Some(move |s, _w: &mut Window, cx: &mut App| {
+                    let provider = provider.read(cx);
+                    let category = provider.get_category_name_from_index(s).unwrap();
+                    div().child(category.clone()).into_any_element()
                 })
             },
         );
@@ -164,7 +112,7 @@ impl Render for MainWindow {
                     .border_color(rgb(0xff0000))
                     .size_full()
                     .relative()
-                    .child(GridScrollbar::new(self.grid_state.clone()))
+                    .child(GridScrollbar::new(self.grid_view.clone()))
                     .child(grid.border_2().border_color(rgb(0xffff00)).size_full()),
             )
             .child(div().child("text"))

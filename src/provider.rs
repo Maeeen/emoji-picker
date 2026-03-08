@@ -30,6 +30,10 @@ impl EmojiCategory {
     pub fn len(&self) -> usize {
         self.emojis.len()
     }
+
+    pub fn get(&self, i: usize) -> Option<&Emoji> {
+        self.emojis.get(i)
+    }
 }
 
 impl fmt::Debug for EmojiCategory {
@@ -136,5 +140,15 @@ impl EmojiProvider {
         let json = String::from_utf8(json).map_err(|_| ProviderError::InvalidFile)?;
         let json = json.as_str();
         EmojiProvider::from_json(json)
+    }
+
+    pub fn get_category_from_index(&self, s: usize) -> Option<&EmojiCategory> {
+        self.categories_order
+            .get(s)
+            .and_then(|x| self.categories.get(x))
+    }
+
+    pub fn get_category_name_from_index(&self, s: usize) -> Option<&String> {
+        self.categories_order.get(s)
     }
 }

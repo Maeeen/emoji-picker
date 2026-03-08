@@ -43,11 +43,11 @@ impl DynamicGridScrollState {
 pub struct DynamicGridScrollHandle(Rc<RefCell<DynamicGridScrollState>>);
 
 pub trait DynamicGridView {
-    fn len(&self, section: usize) -> usize;
+    fn len(&self, section: usize, _cx: &App) -> usize;
 
-    fn number_sections(&self) -> usize;
+    fn number_sections(&self, _cx: &App) -> usize;
 
-    fn scroll_handle(&self) -> DynamicGridScrollHandle;
+    fn scroll_handle(&self) -> Option<DynamicGridScrollHandle>;
 }
 
 impl DynamicGrid {
@@ -68,20 +68,23 @@ impl DynamicGrid {
 
         let scroll_handle = grid.model.scroll_handle().clone();
 
-        grid.interactivity.on_scroll_wheel(move |e, window, _| {
-            let mut state = scroll_handle.0.borrow_mut();
+        if let Some(scroll_handle) = scroll_handle {
+            grid.interactivity.on_scroll_wheel(move |e, window, _| {
+                let mut state = scroll_handle.0.borrow_mut();
 
-            let delta = e.delta.pixel_delta(Pixels::from(12.0));
+                let delta = e.delta.pixel_delta(Pixels::from(12.0));
 
-            state.offset += delta.y;
-            state.clamp_on_known_bounds();
-            window.refresh();
-        });
+                state.offset += delta.y;
+                state.clamp_on_known_bounds();
+                window.refresh();
+            });
+        }
+
         grid
     }
 
     fn measure_item_size(&self, window: &mut Window, cx: &mut App) -> Size<Pixels> {
-        let count = self.model.len(0);
+        let count = self.model.len(0, cx);
         if count == 0 {
             return Size::default();
         }
@@ -92,7 +95,7 @@ impl DynamicGrid {
     }
 
     fn measure_decoration_height(&self, window: &mut Window, cx: &mut App) -> Pixels {
-        if self.model.number_sections() == 0 || self.model.len(0) == 0 {
+        if self.model.number_sections(cx) == 0 || self.model.len(0, cx) == 0 {
             return px(0.);
         }
 
@@ -138,8 +141,8 @@ impl Element for DynamicGrid {
     ) -> (LayoutId, Self::RequestLayoutState) {
         let nb_items_per_section = {
             let mut x = vec![];
-            for s in 0..self.model.number_sections() {
-                x.push(self.model.len(s))
+            for s in 0..self.model.number_sections(cx) {
+                x.push(self.model.len(s, cx))
             }
             x
         };
@@ -152,7 +155,7 @@ impl Element for DynamicGrid {
             inspector_id,
             window,
             cx,
-            |mut style, window, cx| {
+            |mut style, window, _| {
                 style.overflow.y = Overflow::Hidden;
                 window.request_measured_layout(
                     style,
@@ -230,8 +233,8 @@ impl Element for DynamicGrid {
     ) -> Self::PrepaintState {
         let nb_items_per_section = {
             let mut x = vec![];
-            for s in 0..self.model.number_sections() {
-                x.push(self.model.len(s))
+            for s in 0..self.model.number_sections(cx) {
+                x.push(self.model.len(s, cx))
             }
             x
         };
@@ -253,7 +256,7 @@ impl Element for DynamicGrid {
         let content_size = size(item_size.width * (cols as usize), {
             rows_per_section
                 .iter()
-                .map(|x| (*x) * item_size.height)
+                .map(|x| (*x) * item_size.height + decoration_height)
                 .sum()
         });
 
@@ -275,14 +278,20 @@ impl Element for DynamicGrid {
         let margin_x = (bounds.size.width - content_size.width) / 2.;
 
         let scroll_handle = self.model.scroll_handle();
-        let mut scroll_handle = scroll_handle.0.borrow_mut();
 
-        // Ensure that the scroll is valid when resized
-        scroll_handle.content_size = content_size;
-        scroll_handle.viewport = bounds;
-        scroll_handle.clamp_on_known_bounds();
+        let scroll_offset = {
+            if let Some(scroll_handle) = scroll_handle {
+                let mut scroll_handle = scroll_handle.0.borrow_mut();
 
-        let scroll_offset = scroll_handle.offset;
+                // Ensure that the scroll is valid when resized
+                scroll_handle.content_size = content_size;
+                scroll_handle.viewport = bounds;
+                scroll_handle.clamp_on_known_bounds();
+                scroll_handle.offset
+            } else {
+                px(0.)
+            }
+        };
 
         self.interactivity.prepaint(
             id,
@@ -292,7 +301,7 @@ impl Element for DynamicGrid {
             window,
             cx,
             |_style, _, hitbox, window, cx| {
-                if self.model.number_sections() > 0 {
+                if self.model.number_sections(cx) > 0 {
                     // Set a content mask to avoid setting click handlers where they should not be
                     let content_mask = ContentMask { bounds };
 
@@ -432,7 +441,7 @@ pub struct GridScrollbar {
 impl GridScrollbar {
     pub fn new(view: impl 'static + DynamicGridView) -> GridScrollbar {
         GridScrollbar {
-            scroll_handle: view.scroll_handle(),
+            scroll_handle: view.scroll_handle().unwrap_or_default(),
         }
     }
 }
