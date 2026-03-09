@@ -54,15 +54,19 @@ pub struct EmojiProvider {
 }
 
 #[derive(Embed)]
-#[folder = "assets/default-emojis"]
+#[folder = "assets/default-emojis/en"]
 struct DefaultEmojis;
 
 #[derive(serde::Deserialize, Debug)]
 struct SerializedEmoji {
+    /// Unicode representation of the Emoji
     emoji: String,
-    name: String,
-    category: String,
-    subcategory: String,
+    /// Group index
+    group: Option<usize>,
+    /// Order in which to display the groups
+    order: Option<usize>,
+    /// Possible skin variations (skin tone, )
+    skins: Option<Vec<SerializedEmoji>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -88,41 +92,41 @@ impl EmojiProvider {
         categories.keys().cloned().collect()
     }
 
-    fn from_json(str: &str) -> Result<EmojiProvider, ProviderError> {
+    fn from_json(emojis_json: &str, messages_json: &str) -> Result<EmojiProvider, ProviderError> {
         let emojis_serialized: Vec<SerializedEmoji> =
-            serde_json::from_str(str).map_err(|_| ProviderError::NotJSON)?;
+            serde_json::from_str(emojis_json).map_err(|_| ProviderError::NotJSON)?;
 
-        let categories: HashSet<String> = emojis_serialized
+        let categories: usize = emojis_serialized
             .iter()
-            .map(|s| s.category.clone())
-            .collect();
+            .map(|s| s.group.unwrap_or_default())
+            .max();
 
         let mut emojis: Vec<Emoji> = Vec::with_capacity(emojis_serialized.len());
 
-        let mut categories: HashMap<String, EmojiCategory> = categories
-            .into_iter()
-            .map(|x| {
-                (
-                    x.clone(),
-                    EmojiCategory {
-                        name: x,
-                        emojis: vec![],
-                    },
-                )
-            })
-            .collect();
-
-        for semoji in emojis_serialized {
-            let emoji = Emoji {
-                name: semoji.name,
-                unicode: semoji.emoji,
-            };
-            emojis.push(emoji.clone());
-            categories
-                .get_mut(&semoji.category)
-                .expect("Can not get category")
-                .insert(emoji);
-        }
+        // let mut categories: Vec<EmojiCategory> = categories
+        //     .into_iter()
+        //     .map(|x| {
+        //         (
+        //             x.clone(),
+        //             EmojiCategory {
+        //                 name: x,
+        //                 emojis: vec![],
+        //             },
+        //         )
+        //     })
+        //     .collect();
+        //
+        // for semoji in emojis_serialized {
+        //     let emoji = Emoji {
+        //         name: semoji.name,
+        //         unicode: semoji.emoji,
+        //     };
+        //     emojis.push(emoji.clone());
+        //     categories
+        //         .get_mut(&semoji.category)
+        //         .expect("Can not get category")
+        //         .insert(emoji);
+        // }
 
         let categories_order = EmojiProvider::get_categories_order(&categories);
 
